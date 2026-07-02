@@ -5,9 +5,7 @@ export default function Reveal({ trinkets, onBack }) {
   const [visible, setVisible] = useState(false)
   const result = scoreArchetype(trinkets)
 
-  useEffect(() => {
-    setTimeout(() => setVisible(true), 100)
-  }, [])
+  useEffect(() => { setTimeout(() => setVisible(true), 80) }, [])
 
   if (!result) return null
   const winner = result.ranked[0]
@@ -15,104 +13,69 @@ export default function Reveal({ trinkets, onBack }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: '#D9C9C4',
+      position: 'fixed', inset: 0, background: '#D4C4BF',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      overflowY: 'auto', padding: '2rem 1rem',
+      overflowY: 'auto', padding: '2rem',
     }}>
       <div style={{
-        maxWidth: '640px', width: '100%', textAlign: 'center', padding: '2rem',
-        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)',
-        transition: 'opacity 0.8s ease, transform 0.8s ease',
+        maxWidth: '600px', width: '100%', textAlign: 'center',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(20px)',
+        transition: 'opacity 1s ease, transform 1s ease',
       }}>
-
         <p style={{
           fontFamily: 'Inconsolata, monospace',
-          fontSize: '10px', color: '#8A7A77',
-          letterSpacing: '0.14em', textTransform: 'uppercase',
-          marginBottom: '1.5rem',
+          fontSize: '9px', color: '#8A7A77',
+          letterSpacing: '0.16em', textTransform: 'uppercase',
+          marginBottom: '2rem',
         }}>
           your collector archetype
         </p>
 
         <h1 style={{
-          fontFamily: 'UnifrakturMaguntia, cursive',
-          fontSize: 'clamp(36px, 6vw, 68px)',
+          fontFamily: 'JacquardaBastarda9, cursive',
+          fontSize: 'clamp(40px, 7vw, 72px)',
           color: '#1E1E1E',
-          marginBottom: '1rem', lineHeight: 1.1,
+          marginBottom: '1.5rem', lineHeight: 1.05,
         }}>
           {winner.name}
         </h1>
 
         <p style={{
           fontFamily: 'Inconsolata, monospace',
-          fontSize: '13px', color: '#5A4A47',
-          fontStyle: 'italic', marginBottom: '1.5rem', lineHeight: 1.8,
-        }}>
-          {winner.tagline}
-        </p>
-
-        <p style={{
-          fontFamily: 'Inconsolata, monospace',
           fontSize: '12px', color: '#3A2A27',
-          lineHeight: 1.9, marginBottom: '1.5rem',
+          lineHeight: 1.9, marginBottom: '0',
+          maxWidth: '480px', margin: '0 auto',
         }}>
           {winner.description}
         </p>
 
-        <div style={{
-          borderTop: '0.5px solid #B0A0A0', paddingTop: '1.2rem', marginBottom: '1.2rem',
-        }}>
-          <p style={{ fontSize: '10px', color: '#8A7A77', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px', fontFamily: 'Inconsolata, monospace' }}>
-            the tension
-          </p>
-          <p style={{ fontFamily: 'Inconsolata, monospace', fontSize: '12px', color: '#5A4A47', fontStyle: 'italic', lineHeight: 1.8 }}>
-            {winner.tension}
-          </p>
+        <div style={{ marginTop: '2.5rem', display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={onBack} style={{
+            padding: '8px 24px', borderRadius: '99px',
+            border: '0.5px solid #1E1E1E', background: 'none', color: '#1E1E1E',
+            fontFamily: 'Inconsolata, monospace', fontSize: '11px',
+            letterSpacing: '0.08em', cursor: 'pointer',
+          }}>
+            ← back to map
+          </button>
         </div>
 
+        {/* Second archetype — subtle */}
         <div style={{
-          borderTop: '0.5px solid #B0A0A0', paddingTop: '1.2rem', marginBottom: '1.5rem',
+          marginTop: '2.5rem', paddingTop: '1.5rem',
+          borderTop: '0.5px solid #B8A8A4',
         }}>
-          <p style={{ fontSize: '10px', color: '#8A7A77', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px', fontFamily: 'Inconsolata, monospace' }}>
-            what drives you
+          <p style={{ fontFamily: 'Inconsolata, monospace', fontSize: '9px', color: '#8A7A77', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '6px' }}>
+            second archetype — {second.score}/100
           </p>
-          <p style={{ fontFamily: 'Inconsolata, monospace', fontSize: '12px', color: '#3A2A27', lineHeight: 1.8 }}>
-            {winner.motivation}
-          </p>
-        </div>
-
-        {/* Second archetype */}
-        <div style={{
-          border: '0.5px dashed #B0A0A0', borderRadius: '4px',
-          padding: '14px 18px', marginBottom: '2rem', textAlign: 'left',
-        }}>
-          <p style={{ fontSize: '10px', color: '#8A7A77', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px', fontFamily: 'Inconsolata, monospace' }}>
-            your second archetype — {second.score}/100
-          </p>
-          <p style={{ fontFamily: 'Inconsolata, monospace', fontSize: '13px', fontWeight: 600, color: '#1E1E1E', marginBottom: '4px' }}>
+          <p style={{ fontFamily: 'Inconsolata, monospace', fontSize: '13px', color: '#2A1A17', marginBottom: '4px', fontWeight: 600 }}>
             {second.name}
           </p>
-          <p style={{ fontFamily: 'Inconsolata, monospace', fontSize: '11px', color: '#5A4A47', fontStyle: 'italic', lineHeight: 1.7 }}>
+          <p style={{ fontFamily: 'Inconsolata, monospace', fontSize: '11px', color: '#6A5A57', fontStyle: 'italic', lineHeight: 1.7 }}>
             {second.tagline}
           </p>
-          <p style={{ fontFamily: 'Inconsolata, monospace', fontSize: '11px', color: '#8A7A77', marginTop: '8px', lineHeight: 1.7 }}>
-            Most collectors sit between two types. The tension between <strong style={{ color: '#1E1E1E', fontWeight: 600 }}>{winner.name}</strong> and <strong style={{ color: '#1E1E1E', fontWeight: 600 }}>{second.name}</strong> is often more revealing than either archetype alone.
-          </p>
         </div>
-
-        <button onClick={onBack} style={{
-          padding: '9px 28px',
-          border: '0.5px solid #1E1E1E', borderRadius: '99px',
-          background: 'none', color: '#1E1E1E',
-          fontFamily: 'Inconsolata, monospace',
-          fontSize: '11px', letterSpacing: '0.08em',
-          cursor: 'pointer', transition: 'all 0.2s',
-        }}
-          onMouseEnter={e => { e.target.style.background = '#1E1E1E'; e.target.style.color = '#D9C9C4' }}
-          onMouseLeave={e => { e.target.style.background = 'none'; e.target.style.color = '#1E1E1E' }}
-        >
-          ← back to map
-        </button>
       </div>
     </div>
   )

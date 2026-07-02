@@ -6,7 +6,7 @@ export default function Overview({ onStart }) {
     }}>
       <div style={{ maxWidth: '480px', textAlign: 'center', padding: '2rem', animation: 'fadeUp 0.6s ease forwards' }}>
         <h1 style={{
-          fontFamily: 'UnifrakturMaguntia, cursive',
+          fontFamily: 'JacquardaBastarda9, cursive',
           fontSize: '42px', color: '#F0EDE8',
           marginBottom: '2.5rem', letterSpacing: '0.02em',
         }}>
