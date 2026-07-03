@@ -9,52 +9,45 @@ const TRINKETS = [
 ]
 
 export default function Loading() {
-  const [frame, setFrame] = useState([0, 1, 2])
+  const [currentImg, setCurrentImg] = useState(0)
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const count = 3 + Math.floor(Math.random() * 3)
-      const shuffled = [...TRINKETS].sort(() => Math.random() - 0.5)
-      setFrame(shuffled.slice(0, count).map((_, i) => i))
-    }, 120)
+      setCurrentImg(prev => (prev + 1) % TRINKETS.length)
+    }, 280)
     return () => clearInterval(interval)
   }, [])
 
-  const shuffled = [...TRINKETS].sort(() => 0.5 - Math.random())
-
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: '#2C2C2C',
+      position: 'fixed', inset: 0, background: '#1E1E1E',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       gap: '32px',
     }}>
+      {/* Single image centred, rapid cut */}
       <div style={{
-        display: 'flex', gap: '20px', alignItems: 'center',
-        justifyContent: 'center', minHeight: '120px',
+        width: '220px', height: '220px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        {frame.map((idx, i) => (
-          <img
-            key={`${idx}-${i}-${Date.now()}`}
-            src={TRINKETS[idx % TRINKETS.length]}
-            alt=""
-            style={{
-              width: '90px', height: '90px',
-              objectFit: 'contain',
-              animation: 'flashIn 0.08s ease forwards',
-              opacity: 0,
-            }}
-          />
-        ))}
+        <img
+          key={currentImg}
+          src={TRINKETS[currentImg]}
+          alt=""
+          style={{
+            width: '100%', height: '100%',
+            objectFit: 'contain',
+            animation: 'flashIn 0.05s ease forwards',
+          }}
+        />
       </div>
 
       {/* Pixel dots */}
-      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: '7px', alignItems: 'center' }}>
         {[0, 1, 2].map(i => (
           <div key={i} style={{
             width: '5px', height: '5px',
             background: '#787870',
-            imageRendering: 'pixelated',
             animation: `pulse 1.4s ease-in-out infinite`,
             animationDelay: `${i * 0.2}s`,
           }} />

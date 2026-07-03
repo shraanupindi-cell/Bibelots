@@ -11,28 +11,33 @@ export default function Splash({ onEnter }) {
 
   return (
     <div onClick={onEnter} style={{
-      position: 'fixed', inset: 0, background: '#2C2C2C',
+      position: 'fixed', inset: 0, background: '#1E1E1E',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       cursor: 'pointer', overflow: 'hidden',
     }}>
-      {DATES.map((date, i) => (
-        <span key={i} style={{
-          position: 'absolute',
-          left: `${(i * 43 + i * i * 5 + 7) % 86 + 4}%`,
-          top: `${(i * 31 + i * 9 + 5) % 82 + 5}%`,
-          fontFamily: 'Inconsolata, monospace',
-          fontSize: '11px',
-          color: '#787870',
-          animation: `floatUpDown ${2.8 + (i % 4) * 0.6}s ease-in-out infinite`,
-          animationDelay: `${(i * 0.35) % 2.8}s`,
-          pointerEvents: 'none',
-          userSelect: 'none',
-          letterSpacing: '0.04em',
-        }}>
-          {date}
-        </span>
-      ))}
+      {DATES.map((date, i) => {
+        // Vary font size more — some dates bigger, some smaller
+        const sizes = [13, 15, 11, 17, 12, 14, 16, 11, 15, 13, 17, 12, 14, 16, 11, 13, 15, 12]
+        const size = sizes[i % sizes.length]
+        return (
+          <span key={i} style={{
+            position: 'absolute',
+            left: `${(i * 43 + i * i * 5 + 7) % 86 + 4}%`,
+            top: `${(i * 31 + i * 9 + 5) % 82 + 5}%`,
+            fontFamily: 'Inconsolata, monospace',
+            fontSize: `${size}px`,
+            color: '#787870',
+            animation: `floatUpDown ${2.8 + (i % 4) * 0.6}s ease-in-out infinite`,
+            animationDelay: `${(i * 0.35) % 2.8}s`,
+            pointerEvents: 'none',
+            userSelect: 'none',
+            letterSpacing: '0.04em',
+          }}>
+            {date}
+          </span>
+        )
+      })}
 
       <h1 style={{
         fontFamily: 'JacquardaBastarda9, cursive',

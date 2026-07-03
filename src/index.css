@@ -1,7 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --dark: #2C2C2C;
+  --dark: #1E1E1E;
   --blush: #D4C4BF;
   --white: #F0EDE8;
   --dim: #787870;
