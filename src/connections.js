@@ -13,7 +13,17 @@ export function findKnownConnections(trinkets) {
     { test: (a,b) => a.emotion && b.emotion && a.emotion === b.emotion,
       type: 'emotional', label: 'same feeling' },
     // Same era rank
-    { test: (a,b) => a.era_rank !== undefined && a.era_rank === b.era_rank,
+    { test: (a,b) => {
+        // Same era based on actual year proximity (within 100 years), not era_rank
+        const getYear = t => {
+          const m = String(t.date || '').match(/\d{3,4}/)
+          if (m) return parseInt(m[0])
+          const eraYears = {0:300,1:1000,2:1650,3:1900,4:1960,5:2010}
+          return eraYears[t.era_rank ?? 5] || 2000
+        }
+        const ay = getYear(a), by = getYear(b)
+        return Math.abs(ay - by) <= 80 && ay !== by
+      },
       type: 'historical', label: 'same era' },
     // Same region
     { test: (a,b) => a.region && b.region && a.region !== 'Unknown' && a.region === b.region,
@@ -36,9 +46,14 @@ export function findKnownConnections(trinkets) {
     // Both gifted
     { test: (a,b) => a.acquisition === 'gifted' && b.acquisition === 'gifted',
       type: 'personal', label: 'both gifted' },
-    // Adjacent eras (within 1)
-    { test: (a,b) => a.era_rank !== undefined && b.era_rank !== undefined && Math.abs(a.era_rank - b.era_rank) === 1,
-      type: 'historical', label: 'adjacent eras' },
+    // Close in time (within 50 years)
+    { test: (a,b) => {
+        const getY = t => { const m = String(t.date||'').match(/\d{3,4}/); return m ? parseInt(m[0]) : null }
+        const ay = getY(a), by = getY(b)
+        if (!ay || !by) return false
+        return Math.abs(ay - by) <= 50 && ay !== by
+      },
+      type: 'historical', label: 'close in time' },
     // Both rare or one-of-a-kind
     { test: (a,b) => ['rare','one-of-a-kind'].includes(a.rarity) && ['rare','one-of-a-kind'].includes(b.rarity),
       type: 'material', label: 'both rare objects' },
@@ -163,12 +178,20 @@ export function findInferredConnections(trinkets) {
       detail: 'Metal objects from different eras often trace the same economic lineages — the same ore deposits, trade routes, and craft traditions running across centuries of political change.'
     },
     {
-      test: (a,b) => (a.era_rank||5) <= 2 && (b.era_rank||5) <= 2,
+      test: (a,b) => {
+        const getY = t => { const m = String(t.date||'').match(/\d{3,4}/); return m ? parseInt(m[0]) : null }
+        const ay = getY(a), by = getY(b)
+        return ay && by && ay < 1800 && by < 1800
+      },
       label: 'both pre-modern objects',
       detail: 'Both objects predate modernity as we know it. They survived the collapse of the worlds that made them — a rare form of material persistence that very few objects achieve.'
     },
     {
-      test: (a,b) => (a.era_rank||5) <= 3 && (b.era_rank||5) >= 4 && a.region === b.region && a.region !== 'Unknown',
+      test: (a,b) => {
+        const getY = t => { const m = String(t.date||'').match(/\d{3,4}/); return m ? parseInt(m[0]) : null }
+        const ay = getY(a), by = getY(b)
+        return ay && by && Math.abs(ay - by) > 150 && a.region === b.region && a.region && a.region !== 'Unknown'
+      },
       label: 'same place, different centuries',
       detail: 'Two objects from the same region but different eras — one carries the history that the other was born into. The place is the thread; time is the distance between them.'
     },

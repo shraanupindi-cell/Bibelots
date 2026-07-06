@@ -68,7 +68,9 @@ export function scoreArchetype(trinkets) {
   const n = trinkets.length
   if (n === 0) return null
 
-  const eras = new Set(trinkets.map(t => t.era_rank)).size
+  const years2 = trinkets.map(t => { const m = String(t.date||'').match(/\d{3,4}/); return m ? parseInt(m[0]) : null }).filter(Boolean)
+  const yearSpan2 = years2.length >= 2 ? Math.max(...years2) - Math.min(...years2) : 0
+  const eras = Math.ceil(yearSpan2 / 130) // approximate eras from year span
   const regions = new Set(trinkets.map(t => t.region)).size
 
   const acqC = {}
@@ -112,7 +114,9 @@ export function scoreArchetype(trinkets) {
 export function getAxisScores(trinkets) {
   const n = trinkets.length
   if (n === 0) return []
-  const eras = new Set(trinkets.map(t => t.era_rank)).size
+  const years2 = trinkets.map(t => { const m = String(t.date||'').match(/\d{3,4}/); return m ? parseInt(m[0]) : null }).filter(Boolean)
+  const yearSpan2 = years2.length >= 2 ? Math.max(...years2) - Math.min(...years2) : 0
+  const eras = Math.ceil(yearSpan2 / 130) // approximate eras from year span
   const regions = new Set(trinkets.map(t => t.region)).size
   const acqC = {}
   trinkets.forEach(t => { acqC[t.acquisition] = (acqC[t.acquisition] || 0) + 1 })

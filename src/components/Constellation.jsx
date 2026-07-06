@@ -82,7 +82,13 @@ export default function Constellation({ trinkets, onReveal }) {
     return p
   }, [trinkets, trinketYears, minYear, maxYear])
 
-  const nodeRadius = id => 16 + (counts[id] || 0) * 3
+  const nodeRadius = (id, name) => {
+    const words = (name || '').split(' ')
+    const longestWord = Math.max(...words.map(w => w.length))
+    const nameSize = Math.max(longestWord * 4.5, name ? name.length * 2.8 : 0)
+    const connSize = (counts[id] || 0) * 3
+    return Math.max(18, Math.min(nameSize + connSize, 52))
+  }
 
   const sortedYears = useMemo(() =>
     [...new Set(trinketYears)].sort((a,b) => a-b), [trinketYears])
@@ -150,7 +156,7 @@ export default function Constellation({ trinkets, onReveal }) {
               const p = pos[t.id]
               if (!p) return null
               const dx = p.x-cx, dy = p.y-cy, d = Math.sqrt(dx*dx+dy*dy)
-              const nr = nodeRadius(t.id)
+              const nr = nodeRadius(t.id, t.name)
               return <line key={t.id}
                 x1={Math.round(cx+(dx/d)*36)} y1={Math.round(cy+(dy/d)*36)}
                 x2={Math.round(p.x-(dx/d)*nr)} y2={Math.round(p.y-(dy/d)*nr)}
@@ -194,7 +200,7 @@ export default function Constellation({ trinkets, onReveal }) {
             {trinkets.map((t, idx) => {
               const p = pos[t.id]
               if (!p) return null
-              const nr = nodeRadius(t.id)
+              const nr = nodeRadius(t.id, t.name)
               const fill = getNodeFill(idx)
               const tc = getTextFill(fill)
               const sw = fill === '#F0EDE8' ? 1.5 : 1
