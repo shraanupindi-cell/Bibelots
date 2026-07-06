@@ -1,7 +1,5 @@
 import { useState } from 'react'
 
-const REGIONS = ['South India','North India','Central India','East India','West India','Deccan','Northeast India','South Asia','East Asia','Southeast Asia','Middle East','Europe','Africa','Americas','Unknown']
-
 const pill = {
   width: '100%', background: 'none',
   border: '0.5px solid #2A1A17', borderRadius: '99px',
@@ -18,8 +16,7 @@ const pillSelect = {
 
 const EMPTY = {
   name: '', place: '', country: '', date: '', emotion: '',
-  acquisition: '', material: '', note: '',
-  material_type: '', rarity: '', region: '',
+  acquisition: '', material: '', note: '', material_type: '',
 }
 
 export default function Entry({ trinkets, onAdd, onRemove, onMap }) {
@@ -51,8 +48,10 @@ export default function Entry({ trinkets, onAdd, onRemove, onMap }) {
           padding: '1.5rem', marginBottom: '1.2rem',
           display: 'flex', flexDirection: 'column', gap: '10px',
         }}>
+          {/* Object — full width */}
           <input style={pill} placeholder="Object" value={form.name} onChange={e => set('name', e.target.value)} />
 
+          {/* Place + Emotional tag */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <input style={pill} placeholder="Place" value={form.place} onChange={e => set('place', e.target.value)} />
             <select style={{ ...pillSelect, background: 'none', backgroundImage: pillSelect.backgroundImage, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center' }}
@@ -62,6 +61,7 @@ export default function Entry({ trinkets, onAdd, onRemove, onMap }) {
             </select>
           </div>
 
+          {/* Date + How did you get it */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <input style={pill} placeholder="Date / Year e.g. 1945" value={form.date}
               onChange={e => set('date', e.target.value)} />
@@ -72,6 +72,7 @@ export default function Entry({ trinkets, onAdd, onRemove, onMap }) {
             </select>
           </div>
 
+          {/* Material + Handmade or industrial */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <input style={pill} placeholder="Material" value={form.material} onChange={e => set('material', e.target.value)} />
             <select style={{ ...pillSelect, background: 'none', backgroundImage: pillSelect.backgroundImage, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center' }}
@@ -82,22 +83,11 @@ export default function Entry({ trinkets, onAdd, onRemove, onMap }) {
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <select style={{ ...pillSelect, background: 'none', backgroundImage: pillSelect.backgroundImage, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center' }}
-              value={form.region} onChange={e => set('region', e.target.value)}>
-              <option value="">Region ▾</option>
-              {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-            <select style={{ ...pillSelect, background: 'none', backgroundImage: pillSelect.backgroundImage, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center' }}
-              value={form.rarity} onChange={e => set('rarity', e.target.value)}>
-              <option value="">Rarity ▾</option>
-              {['common','uncommon','rare','one-of-a-kind'].map(r => <option key={r}>{r}</option>)}
-            </select>
-          </div>
-
+          {/* Note — full width */}
           <input style={pill} placeholder="Note — why does this object matter?" value={form.note} onChange={e => set('note', e.target.value)} />
         </div>
 
+        {/* Add + Clear */}
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '12px' }}>
           <button onClick={handleAdd} style={{
             padding: '9px 28px', borderRadius: '99px',
@@ -111,6 +101,7 @@ export default function Entry({ trinkets, onAdd, onRemove, onMap }) {
           }}>Clear</button>
         </div>
 
+        {/* Your Collection dropdown */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
           <button onClick={() => setCollOpen(o => !o)} style={{
             padding: '8px 24px', borderRadius: '99px',
@@ -133,6 +124,7 @@ export default function Entry({ trinkets, onAdd, onRemove, onMap }) {
           </div>
         )}
 
+        {/* Begin Mapping */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
           <button onClick={onMap} disabled={trinkets.length < 3} style={{
             padding: '11px 48px', borderRadius: '99px',
@@ -141,7 +133,7 @@ export default function Entry({ trinkets, onAdd, onRemove, onMap }) {
             color: trinkets.length >= 3 ? '#D4C4BF' : '#9A8A87',
             fontFamily: 'Inconsolata, monospace', fontSize: '13px', letterSpacing: '0.06em',
             cursor: trinkets.length >= 3 ? 'pointer' : 'not-allowed', transition: 'all 0.2s',
-          }}>Start Mapping</button>
+          }}>Begin Mapping</button>
           {trinkets.length < 3 && (
             <p style={{ fontSize: '10px', color: '#8A7A77', fontFamily: 'Inconsolata, monospace' }}>
               add {3 - trinkets.length} more object{3 - trinkets.length !== 1 ? 's' : ''} to begin

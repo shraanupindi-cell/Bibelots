@@ -83,11 +83,12 @@ export default function Constellation({ trinkets, onReveal }) {
   }, [trinkets, trinketYears, minYear, maxYear])
 
   const nodeRadius = (id, name) => {
+    // Size purely based on name — enough to fit the text, no more
     const words = (name || '').split(' ')
-    const longestWord = Math.max(...words.map(w => w.length))
-    const nameSize = Math.max(longestWord * 4.5, name ? name.length * 2.8 : 0)
-    const connSize = (counts[id] || 0) * 3
-    return Math.max(18, Math.min(nameSize + connSize, 52))
+    const maxLineLen = Math.max(...words.map(w => w.length))
+    // Each char ~5px wide at font-size 9, radius = half width + padding
+    const r = Math.max(16, Math.min(maxLineLen * 5.2 / 2 + 8, 40))
+    return r
   }
 
   const sortedYears = useMemo(() =>
@@ -169,23 +170,31 @@ export default function Constellation({ trinkets, onReveal }) {
               if (!p1 || !p2) return null
               const color = c.inferred ? CONN_COLORS.inferred : (CONN_COLORS[c.type] || '#C8B89A')
               const dash = c.inferred ? '5 3' : undefined
-              const mx = Math.round((p1.x+p2.x)/2)
-              const my = Math.round((p1.y+p2.y)/2)
-              const angle = Math.atan2(p2.y-p1.y, p2.x-p1.x) * 180 / Math.PI
-              const adj = Math.abs(angle) > 90 ? angle + 180 : angle
-              const label = c.label.length > 20 ? c.label.substring(0,18)+'…' : c.label
+              const isSelected = selectedConn === c
               return (
-                <g key={i} onClick={() => setSelectedConn(selectedConn===c ? null : c)} style={{ cursor: 'pointer' }}>
+                <g key={i} onClick={() => setSelectedConn(isSelected ? null : c)} style={{ cursor: 'pointer' }}>
+                  {/* Invisible wider hit area */}
                   <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
-                    stroke={selectedConn===c ? '#FFFFFF' : color}
-                    strokeWidth={selectedConn===c ? 2 : 1.2}
+                    stroke="transparent" strokeWidth={12} />
+                  <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
+                    stroke={isSelected ? '#FFFFFF' : color}
+                    strokeWidth={isSelected ? 2 : 1.2}
                     strokeDasharray={dash} opacity={1} />
-                  <text x={mx} y={my} textAnchor="middle"
-                    fontSize="8.5" fill={selectedConn===c ? '#FFFFFF' : color}
-                    fontFamily="Inconsolata, monospace" fontStyle="italic"
-                    transform={`rotate(${adj}, ${mx}, ${my})`} dy="-5">
-                    {label}
-                  </text>
+                  {/* Label only shows on selected connection */}
+                  {isSelected && (() => {
+                    const mx = Math.round((p1.x+p2.x)/2)
+                    const my = Math.round((p1.y+p2.y)/2)
+                    const angle = Math.atan2(p2.y-p1.y, p2.x-p1.x) * 180 / Math.PI
+                    const adj = Math.abs(angle) > 90 ? angle + 180 : angle
+                    return (
+                      <text x={mx} y={my} textAnchor="middle"
+                        fontSize="9" fill="#FFFFFF"
+                        fontFamily="Inconsolata, monospace" fontStyle="italic"
+                        transform={`rotate(${adj}, ${mx}, ${my})`} dy="-6">
+                        {c.label}
+                      </text>
+                    )
+                  })()}
                 </g>
               )
             })}
@@ -204,25 +213,47 @@ export default function Constellation({ trinkets, onReveal }) {
               const fill = getNodeFill(idx)
               const tc = getTextFill(fill)
               const sw = fill === '#F0EDE8' ? 1.5 : 1
+              // Split name across up to 2 lines — each line max 10 chars
               const words = t.name.split(' ')
-              const l1 = words.slice(0,2).join(' ')
-              const l2 = words.length > 2 ? words.slice(2).join(' ') : null
+              let lines = []
+              let line = ''
+              words.forEach(w => {
+                if ((line + ' ' + w).trim().length <= 10) {
+                  line = (line + ' ' + w).trim()
+                } else {
+                  if (line) lines.push(line)
+                  line = w
+                }
+              })
+              if (line) lines.push(line)
+              lines = lines.slice(0, 2)
+              const lineHeight = 10
+              const textStartY = p.y - ((lines.length - 1) * lineHeight) / 2
+
+              // Date label — push outward from centre
               const angle = Math.atan2(p.y-cy, p.x-cx)
-              const lx = Math.round(p.x + Math.cos(angle)*(nr+18))
-              const ly = Math.round(p.y + Math.sin(angle)*(nr+12))
+              const dateDist = nr + 16
+              const lx = Math.round(p.x + Math.cos(angle) * dateDist)
+              const ly = Math.round(p.y + Math.sin(angle) * dateDist)
+
               return (
                 <g key={t.id}>
                   <circle cx={p.x} cy={p.y} r={nr}
                     fill={fill} stroke="#C8C4BC" strokeWidth={sw} />
-                  <text x={p.x} y={p.y+(l2?-4:0)} textAnchor="middle"
-                    dominantBaseline="central" fontSize="9" fill={tc}
-                    fontFamily="Inconsolata, monospace" fontWeight="500">{l1}</text>
-                  {l2 && <text x={p.x} y={p.y+9} textAnchor="middle"
-                    dominantBaseline="central" fontSize="9" fill={tc}
-                    fontFamily="Inconsolata, monospace">{l2}</text>}
-                  {t.date && <text x={lx} y={ly} textAnchor="middle"
-                    fontSize="9.5" fill="#909088"
-                    fontFamily="Inconsolata, monospace">{t.date}</text>}
+                  {lines.map((ln, li) => (
+                    <text key={li}
+                      x={p.x} y={textStartY + li * lineHeight}
+                      textAnchor="middle" dominantBaseline="central"
+                      fontSize="8.5" fill={tc}
+                      fontFamily="Inconsolata, monospace" fontWeight="500">
+                      {ln}
+                    </text>
+                  ))}
+                  {t.date && (
+                    <text x={lx} y={ly} textAnchor="middle"
+                      fontSize="9" fill="#909088"
+                      fontFamily="Inconsolata, monospace">{t.date}</text>
+                  )}
                 </g>
               )
             })}
