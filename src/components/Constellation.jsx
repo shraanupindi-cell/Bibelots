@@ -2,27 +2,32 @@ import { useEffect, useState, useMemo } from 'react'
 import { findKnownConnections, findInferredConnections, connCountMap } from '../connections'
 import { getAxisScores } from '../archetypes'
 
-// Parse year from date string
 function parseYear(dateStr) {
   if (!dateStr) return null
   const match = String(dateStr).match(/\d{3,4}/)
   return match ? parseInt(match[0]) : null
 }
 
-// Random but stable fill per index
+const ERA_YEAR = { 0: 300, 1: 1000, 2: 1650, 3: 1900, 4: 1960, 5: 2010 }
+
+// Node fill — random by index
 function getNodeFill(index) {
-  const fills = ['#F0EDE8', '#F0EDE8', 'rgba(240,237,232,0.5)', 'none', 'none', 'rgba(240,237,232,0.2)']
+  const fills = ['#F0EDE8', '#F0EDE8', 'rgba(240,237,232,0.45)', 'none', 'none', 'rgba(240,237,232,0.18)']
   return fills[index % fills.length]
 }
+function getTextFill(fill) { return fill === '#F0EDE8' ? '#1E1E1E' : '#F0EDE8' }
 
-function getTextFill(fill) {
-  return fill === '#F0EDE8' ? '#1E1E1E' : '#F0EDE8'
-}
-
+// Connection colours by type — beige palette
 const CONN_COLORS = {
-  historical: '#D4D0CC', geographic: '#B8D4C8', material: '#D4C8B8',
-  personal: '#E0D4CF', emotional: '#C8B8D4', acquisition: '#B8C8D4',
-  cultural: '#D4B8B8', functional: '#C8D4B8', inferred: '#888880',
+  historical:  '#C8B89A',
+  geographic:  '#9ABCA8',
+  material:    '#C4A882',
+  personal:    '#D4BEB0',
+  emotional:   '#B8A8C4',
+  acquisition: '#A8B4C4',
+  cultural:    '#C4A0A0',
+  functional:  '#A8C4A8',
+  inferred:    '#686860',
 }
 
 export default function Constellation({ trinkets, onReveal }) {
@@ -43,58 +48,46 @@ export default function Constellation({ trinkets, onReveal }) {
 
   useEffect(() => { setTimeout(() => setAxesAnimated(true), 300) }, [])
 
-  const W = 600, H = 540, cx = 300, cy = 265
-  const MAX_R = 230, MIN_R = 65
+  const W = 680, H = 580, cx = 340, cy = 285
+  const MAX_R = 250, MIN_R = 80
 
-  // Get year from each trinket — try date field first, fallback to era_rank
-  const ERA_YEAR = { 0: 300, 1: 1000, 2: 1650, 3: 1900, 4: 1960, 5: 2010 }
-
-  const trinketYears = useMemo(() => {
-    return trinkets.map(t => {
-      const y = parseYear(t.date)
-      return y || ERA_YEAR[t.era_rank ?? 5] || 2000
-    })
-  }, [trinkets])
+  const trinketYears = useMemo(() =>
+    trinkets.map(t => parseYear(t.date) || ERA_YEAR[t.era_rank ?? 5] || 2000),
+    [trinkets])
 
   const minYear = useMemo(() => Math.min(...trinketYears), [trinketYears])
   const maxYear = useMemo(() => Math.max(...trinketYears), [trinketYears])
 
-  // Position: oldest = outermost, newest = innermost
-  // Group same-year trinkets on same ring
-  const yearGroups = useMemo(() => {
-    const groups = {}
-    trinkets.forEach((t, i) => {
-      const y = trinketYears[i]
-      if (!groups[y]) groups[y] = []
-      groups[y].push(t)
-    })
-    return groups
-  }, [trinkets, trinketYears])
-
+  // Spread nodes evenly around full 360° — no clustering
   const pos = useMemo(() => {
     const p = {}
+    const n = trinkets.length
     const range = maxYear - minYear || 1
-    Object.entries(yearGroups).forEach(([year, group], gi) => {
-      // Map year to radius: oldest → MAX_R, newest → MIN_R
-      const t = (parseInt(year) - minYear) / range
-      const r = MAX_R - t * (MAX_R - MIN_R)
-      group.forEach((t, i) => {
-        const offset = gi * 0.8
-        const angle = offset + (i / group.length) * 2 * Math.PI - Math.PI / 2
-        p[t.id] = {
-          x: Math.round(cx + r * Math.cos(angle)),
-          y: Math.round(cy + r * Math.sin(angle)),
-        }
-      })
+
+    trinkets.forEach((t, i) => {
+      const year = trinketYears[i]
+      // Radius based on year — oldest outermost
+      const yearT = (year - minYear) / range
+      const r = MAX_R - yearT * (MAX_R - MIN_R)
+
+      // Spread evenly around circle — golden angle to avoid clustering
+      const goldenAngle = 2.399963 // radians
+      const angle = i * goldenAngle - Math.PI / 2
+
+      p[t.id] = {
+        x: Math.round(cx + r * Math.cos(angle)),
+        y: Math.round(cy + r * Math.sin(angle)),
+      }
     })
     return p
-  }, [yearGroups, minYear, maxYear])
+  }, [trinkets, trinketYears, minYear, maxYear])
 
-  const nodeRadius = id => 15 + (counts[id] || 0) * 3
+  const nodeRadius = id => 16 + (counts[id] || 0) * 3
 
-  // Unique years sorted for ring labels
   const sortedYears = useMemo(() =>
     [...new Set(trinketYears)].sort((a,b) => a-b), [trinketYears])
+
+  const usedConnTypes = [...new Set(activeConns.map(c => c.inferred ? 'inferred' : c.type))]
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#1E1E1E' }}>
@@ -127,9 +120,9 @@ export default function Constellation({ trinkets, onReveal }) {
             }}>analysis →</button>
           </div>
 
-          <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: '620px', maxHeight: '66vh' }}>
+          <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: '700px', maxHeight: '68vh' }}>
 
-            {/* Rings — one per unique year in collection */}
+            {/* Rings per unique year */}
             {sortedYears.map((year, yi) => {
               const range = maxYear - minYear || 1
               const t = (year - minYear) / range
@@ -139,13 +132,13 @@ export default function Constellation({ trinkets, onReveal }) {
               return (
                 <g key={year}>
                   <circle cx={cx} cy={cy} r={Math.round(r)}
-                    fill="none" stroke="#303030" strokeWidth="0.8" strokeDasharray="3 6" />
+                    fill="none" stroke="#2C2C2C" strokeWidth="0.8" strokeDasharray="3 6" />
                   {(isOldest || isNewest) && (
                     <text x={cx + Math.round(r) + 6} y={cy}
-                      fontSize="9" fill="#505048"
+                      fontSize="9" fill="#484840"
                       fontFamily="Inconsolata, monospace"
                       dominantBaseline="central" fontStyle="italic">
-                      {isOldest ? `oldest` : `newest`}
+                      {isOldest ? 'oldest' : 'newest'}
                     </text>
                   )}
                 </g>
@@ -159,31 +152,30 @@ export default function Constellation({ trinkets, onReveal }) {
               const dx = p.x-cx, dy = p.y-cy, d = Math.sqrt(dx*dx+dy*dy)
               const nr = nodeRadius(t.id)
               return <line key={t.id}
-                x1={Math.round(cx+(dx/d)*34)} y1={Math.round(cy+(dy/d)*34)}
+                x1={Math.round(cx+(dx/d)*36)} y1={Math.round(cy+(dy/d)*36)}
                 x2={Math.round(p.x-(dx/d)*nr)} y2={Math.round(p.y-(dy/d)*nr)}
-                stroke="#404040" strokeWidth="0.8" />
+                stroke="#383830" strokeWidth="0.8" />
             })}
 
-            {/* Connections */}
+            {/* Connection lines — coloured by type */}
             {activeConns.map((c, i) => {
               const p1 = pos[c.ids[0]], p2 = pos[c.ids[1]]
               if (!p1 || !p2) return null
-              const color = c.inferred ? CONN_COLORS.inferred : (CONN_COLORS[c.type] || '#D4D0CC')
+              const color = c.inferred ? CONN_COLORS.inferred : (CONN_COLORS[c.type] || '#C8B89A')
               const dash = c.inferred ? '5 3' : undefined
               const mx = Math.round((p1.x+p2.x)/2)
               const my = Math.round((p1.y+p2.y)/2)
               const angle = Math.atan2(p2.y-p1.y, p2.x-p1.x) * 180 / Math.PI
               const adj = Math.abs(angle) > 90 ? angle + 180 : angle
-              const label = c.label.length > 22 ? c.label.substring(0,20)+'…' : c.label
+              const label = c.label.length > 20 ? c.label.substring(0,18)+'…' : c.label
               return (
                 <g key={i} onClick={() => setSelectedConn(selectedConn===c ? null : c)} style={{ cursor: 'pointer' }}>
                   <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
                     stroke={selectedConn===c ? '#FFFFFF' : color}
                     strokeWidth={selectedConn===c ? 2 : 1.2}
-                    strokeDasharray={dash}
-                    opacity={1} />
+                    strokeDasharray={dash} opacity={1} />
                   <text x={mx} y={my} textAnchor="middle"
-                    fontSize="9" fill={selectedConn===c ? '#FFFFFF' : color}
+                    fontSize="8.5" fill={selectedConn===c ? '#FFFFFF' : color}
                     fontFamily="Inconsolata, monospace" fontStyle="italic"
                     transform={`rotate(${adj}, ${mx}, ${my})`} dy="-5">
                     {label}
@@ -193,7 +185,7 @@ export default function Constellation({ trinkets, onReveal }) {
             })}
 
             {/* You node */}
-            <circle cx={cx} cy={cy} r={34} fill="#D4C4BF" />
+            <circle cx={cx} cy={cy} r={36} fill="#D4C4BF" />
             <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central"
               fontSize="13" fill="#1E1E1E"
               fontFamily="Inconsolata, monospace" fontWeight="600">You</text>
@@ -205,7 +197,6 @@ export default function Constellation({ trinkets, onReveal }) {
               const nr = nodeRadius(t.id)
               const fill = getNodeFill(idx)
               const tc = getTextFill(fill)
-              const stroke = '#D4D0CC'
               const sw = fill === '#F0EDE8' ? 1.5 : 1
               const words = t.name.split(' ')
               const l1 = words.slice(0,2).join(' ')
@@ -216,7 +207,7 @@ export default function Constellation({ trinkets, onReveal }) {
               return (
                 <g key={t.id}>
                   <circle cx={p.x} cy={p.y} r={nr}
-                    fill={fill} stroke={stroke} strokeWidth={sw} />
+                    fill={fill} stroke="#C8C4BC" strokeWidth={sw} />
                   <text x={p.x} y={p.y+(l2?-4:0)} textAnchor="middle"
                     dominantBaseline="central" fontSize="9" fill={tc}
                     fontFamily="Inconsolata, monospace" fontWeight="500">{l1}</text>
@@ -224,24 +215,29 @@ export default function Constellation({ trinkets, onReveal }) {
                     dominantBaseline="central" fontSize="9" fill={tc}
                     fontFamily="Inconsolata, monospace">{l2}</text>}
                   {t.date && <text x={lx} y={ly} textAnchor="middle"
-                    fontSize="10" fill="#A0A098"
+                    fontSize="9.5" fill="#909088"
                     fontFamily="Inconsolata, monospace">{t.date}</text>}
                 </g>
               )
             })}
           </svg>
 
-          {/* Legend */}
-          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <svg width="28" height="12"><line x1="0" y1="6" x2="28" y2="6" stroke="#D4D0CC" strokeWidth="1.2" /></svg>
-              <span style={{ fontFamily: 'Inconsolata, monospace', fontSize: '10px', color: '#787870' }}>known</span>
+          {/* Legend — connection types */}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '6px' }}>
+            {usedConnTypes.map(type => (
+              <div key={type} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <svg width="22" height="10">
+                  <line x1="0" y1="5" x2="22" y2="5"
+                    stroke={CONN_COLORS[type] || '#C8B89A'}
+                    strokeWidth="1.5"
+                    strokeDasharray={type === 'inferred' ? '4 3' : undefined} />
+                </svg>
+                <span style={{ fontFamily: 'Inconsolata, monospace', fontSize: '9px', color: '#787870' }}>{type}</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ fontFamily: 'Inconsolata, monospace', fontSize: '9px', color: '#505048' }}>outer = oldest · inner = newest</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <svg width="28" height="12"><line x1="0" y1="6" x2="28" y2="6" stroke="#888880" strokeWidth="1.2" strokeDasharray="5 3" /></svg>
-              <span style={{ fontFamily: 'Inconsolata, monospace', fontSize: '10px', color: '#787870' }}>inferred</span>
-            </div>
-            <span style={{ fontFamily: 'Inconsolata, monospace', fontSize: '10px', color: '#606058' }}>outer = oldest · inner = newest</span>
           </div>
 
           {/* Connection tooltip */}
@@ -277,11 +273,10 @@ export default function Constellation({ trinkets, onReveal }) {
           })()}
 
           <button onClick={onReveal} style={{
-            marginTop: '10px', padding: '10px 36px',
-            borderRadius: '12px', border: '1px solid #F0EDE8',
-            background: 'none', color: '#F0EDE8',
-            fontFamily: 'JacquardaBastarda9, cursive',
-            fontSize: '20px', cursor: 'pointer', transition: 'all 0.2s',
+            marginTop: '10px', padding: '10px 36px', borderRadius: '12px',
+            border: '1px solid #F0EDE8', background: 'none', color: '#F0EDE8',
+            fontFamily: 'JacquardaBastarda9, cursive', fontSize: '20px',
+            cursor: 'pointer', transition: 'all 0.2s',
           }}
             onMouseEnter={e => { e.currentTarget.style.background='#F0EDE8'; e.currentTarget.style.color='#1E1E1E' }}
             onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color='#F0EDE8' }}
