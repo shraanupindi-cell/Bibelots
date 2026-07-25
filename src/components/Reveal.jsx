@@ -20,24 +20,26 @@ export default function Reveal({ trinkets, onBack }) {
     })
   }
 
-  const handleScreenshot = async () => {
-    // Capture the reveal div as image using canvas
-    try {
-      const el = revealRef.current
-      if (!el) return
-      // Use html2canvas if available, otherwise fall back to a styled data URL share
-      const { default: html2canvas } = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js')
-      const canvas = await html2canvas(el, { backgroundColor:'#E8E0D0', scale:2 })
-      const link = document.createElement('a')
-      link.download = `bibelots-${winner.name.replace(/\s+/g,'-').toLowerCase()}.png`
-      link.href = canvas.toDataURL('image/png')
-      link.click()
-    } catch(e) {
-      // Fallback — open archetype text in a new printable window
-      const w = window.open('','_blank')
-      w.document.write(`<html><head><style>body{font-family:serif;padding:40px;background:#E8E0D0;color:#1A1A1A;max-width:600px;margin:auto}</style></head><body><h1 style="font-size:48px;margin-bottom:16px">${winner.name}</h1><p style="font-style:italic;margin-bottom:20px">${winner.tagline}</p><p>${winner.description}</p><p style="margin-top:20px;font-size:12px;opacity:0.6">bibelots.vercel.app</p></body></html>`)
-      w.document.close()
-      w.print()
+  const handleScreenshot = () => {
+    // Load html2canvas via script tag then capture
+    const existing = document.getElementById('html2canvas-script')
+    const doCapture = () => {
+      if (!window.html2canvas || !revealRef.current) return
+      window.html2canvas(revealRef.current, { backgroundColor:'#E8E0D0', scale:2 }).then(canvas => {
+        const link = document.createElement('a')
+        link.download = `bibelots-${winner.name.replace(/\s+/g,'-').toLowerCase()}.png`
+        link.href = canvas.toDataURL('image/png')
+        link.click()
+      })
+    }
+    if (existing) {
+      doCapture()
+    } else {
+      const script = document.createElement('script')
+      script.id = 'html2canvas-script'
+      script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
+      script.onload = doCapture
+      document.head.appendChild(script)
     }
   }
 
