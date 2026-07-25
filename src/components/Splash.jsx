@@ -78,7 +78,7 @@ export default function Splash({ onEnter }) {
 
   return (
     <div onClick={onEnter} style={{
-      position:'fixed', inset:0, background:'#C41A1A',
+      position:'fixed', inset:0, background:'#1E1E1E',
       display:'flex', flexDirection:'column',
       alignItems:'center', justifyContent:'center',
       cursor:'pointer', overflow:'hidden',
@@ -90,7 +90,7 @@ export default function Splash({ onEnter }) {
           top:`${state.current[i].y}%`,
           fontFamily:'JacquardaBastarda9, cursive',
           fontSize:`${c.size}px`,
-          color:'rgba(0,0,0,0.25)',
+          color:'#F2EDE4',
           pointerEvents:'none',
           userSelect:'none',
           lineHeight:1,

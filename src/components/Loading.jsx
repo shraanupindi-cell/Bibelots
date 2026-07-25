@@ -8,7 +8,7 @@ export default function Loading() {
     return () => clearInterval(interval)
   }, [])
   return (
-    <div style={{ position:'fixed',inset:0,background:'#1A1A1A',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'32px' }}>
+    <div style={{ position:'fixed',inset:0,background:'#1E1E1E',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'32px' }}>
       <div style={{ width:'220px',height:'220px',display:'flex',alignItems:'center',justifyContent:'center' }}>
         <img key={current} src={TRINKETS[current]} alt="" style={{ width:'100%',height:'100%',objectFit:'contain',animation:'flashIn 0.05s ease forwards' }} />
       </div>

@@ -44,14 +44,17 @@ function spreadNodes(rawPos, minDist, iterations=80) {
   return pos
 }
 
-// Jagged line path between two points
-function jaggedPath(x1,y1,x2,y2,amplitude=6,segments=8) {
+// Zigzag line path — sharp alternating deflections like reference image
+function jaggedPath(x1,y1,x2,y2,amplitude=8,segments=10) {
   const dx=(x2-x1)/segments,dy=(y2-y1)/segments
+  // Perpendicular direction
+  const len=Math.sqrt((x2-x1)**2+(y2-y1)**2)||1
+  const px=-(y2-y1)/len, py=(x2-x1)/len
   let d=`M${x1} ${y1}`
   for(let i=1;i<segments;i++) {
-    const px=x1+dx*i+((i%2===0?1:-1)*amplitude*(Math.random()*0.5+0.5))
-    const py=y1+dy*i+((i%2===0?-1:1)*amplitude*(Math.random()*0.5+0.5))
-    d+=` L${Math.round(px)} ${Math.round(py)}`
+    const bx=x1+dx*i, by=y1+dy*i
+    const sign=i%2===0?1:-1
+    d+=` L${Math.round(bx+px*amplitude*sign)} ${Math.round(by+py*amplitude*sign)}`
   }
   d+=` L${x2} ${y2}`
   return d
@@ -79,21 +82,59 @@ export default function Constellation({ trinkets, onReveal }) {
 
   useEffect(()=>{ setTimeout(()=>setAxesAnimated(true),300) },[])
 
-  // Build animation — nodes appear one by one, then connections draw
+  // Planetary orbit animation state
+  // Each node starts far out and spirals to final position
+  const [nodeProgress, setNodeProgress] = useState({}) // 0→1 per node id
+  const orbitRef = useRef(null)
+
   useEffect(()=>{
     if(view!=='map') return
     setVisibleNodes([])
     setVisibleConns([])
-    const timers=[]
-    trinkets.forEach((_,i)=>{
-      timers.push(setTimeout(()=>setVisibleNodes(v=>[...v,i]),200+i*120))
+    setNodeProgress({})
+
+    const timers = []
+    // Stagger node entry — each starts orbiting then settles
+    trinkets.forEach((t, i) => {
+      timers.push(setTimeout(() => {
+        setVisibleNodes(v => [...v, i])
+        // Animate progress 0→1 over 1200ms using rAF
+        const start = performance.now()
+        const duration = 1200
+        const animate = (now) => {
+          const elapsed = now - start
+          const p = Math.min(elapsed / duration, 1)
+          // Ease out cubic
+          const eased = 1 - Math.pow(1 - p, 3)
+          setNodeProgress(prev => ({ ...prev, [t.id]: eased }))
+          if (p < 1) requestAnimationFrame(animate)
+        }
+        requestAnimationFrame(animate)
+      }, i * 200))
     })
-    const connDelay=200+trinkets.length*120+200
-    activeConns.forEach((_,i)=>{
-      timers.push(setTimeout(()=>setVisibleConns(v=>[...v,i]),connDelay+i*80))
+
+    // Connections appear after all nodes settled
+    const connDelay = trinkets.length * 200 + 1400
+    activeConns.forEach((_, i) => {
+      timers.push(setTimeout(() => setVisibleConns(v => [...v, i]), connDelay + i * 80))
     })
-    return ()=>timers.forEach(clearTimeout)
-  },[view,trinkets,showKnown,showInferred])
+    return () => timers.forEach(clearTimeout)
+  }, [view, trinkets, showKnown, showInferred])
+
+  // Get animated position for a node — orbits from outer ring to final pos
+  const getAnimatedPos = (id, finalPos) => {
+    const p = nodeProgress[id] ?? 0
+    if (p >= 1) return finalPos
+    // Start position — orbiting at MAX_R distance, angle shifts as it spirals in
+    const angle = Math.atan2(finalPos.y - cy, finalPos.x - cx)
+    const orbitAngle = angle + (1 - p) * Math.PI * 2 // full orbit when p=0, no extra when p=1
+    const startR = MAX_R * 1.1
+    const currentR = startR + (Math.sqrt((finalPos.x-cx)**2 + (finalPos.y-cy)**2) - startR) * p
+    return {
+      x: Math.round(cx + currentR * Math.cos(orbitAngle)),
+      y: Math.round(cy + currentR * Math.sin(orbitAngle)),
+    }
+  }
 
   const isMobile = window.innerWidth<600
   const W=isMobile?360:640,H=isMobile?380:540,cx=W/2,cy=H/2
@@ -148,7 +189,7 @@ export default function Constellation({ trinkets, onReveal }) {
   const lineColor='#E8E0D0'
 
   return (
-    <div style={{ position:'fixed',inset:0,background:'#2A2A2A' }}>
+    <div style={{ position:'fixed',inset:0,background:'#1E1E1E' }}>
       {view==='map' ? (
         <div style={{ position:'fixed',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0.5rem' }}>
           {/* Toggles */}
@@ -166,7 +207,7 @@ export default function Constellation({ trinkets, onReveal }) {
               const r=MAX_R-t*(MAX_R-MIN_R)
               return (
                 <g key={year}>
-                  <circle cx={cx} cy={cy} r={Math.round(r)} fill="none" stroke="#444440" strokeWidth="1" strokeDasharray="2 6" />
+                  <circle cx={cx} cy={cy} r={Math.round(r)} fill="none" stroke="#383830" strokeWidth="1" strokeDasharray="2 6" />
                   {(yi===0||yi===sortedYears.length-1)&&(
                     <text x={Math.min(cx+Math.round(r)+6,W-44)} y={cy} fontSize="9" fill="#666658" fontFamily="Inconsolata,monospace" dominantBaseline="central" fontStyle="italic">
                       {yi===0?`oldest (${year})`:`newest (${year})`}
@@ -179,10 +220,11 @@ export default function Constellation({ trinkets, onReveal }) {
             {/* Spokes */}
             {trinkets.map((t,i)=>{
               if(!visibleNodes.includes(i)) return null
-              const p=pos[t.id]; if(!p) return null
-              const dx=p.x-cx,dy=p.y-cy,d=Math.sqrt(dx*dx+dy*dy)
+              const finalP=pos[t.id]; if(!finalP) return null
+              const p=getAnimatedPos(t.id, finalP)
+              const dx=p.x-cx,dy=p.y-cy,d=Math.sqrt(dx*dx+dy*dy)||1
               const nr=nodeRadius(t.id,t.name)
-              return <line key={t.id} x1={Math.round(cx+(dx/d)*36)} y1={Math.round(cy+(dy/d)*36)} x2={Math.round(p.x-(dx/d)*nr)} y2={Math.round(p.y-(dy/d)*nr)} stroke="#3A3A38" strokeWidth="0.8" />
+              return <line key={t.id} x1={Math.round(cx+(dx/d)*36)} y1={Math.round(cy+(dy/d)*36)} x2={Math.round(p.x-(dx/d)*nr)} y2={Math.round(p.y-(dy/d)*nr)} stroke="#2A2A28" strokeWidth="0.8" />
             })}
 
             {/* Connections — varied line styles, all beige */}
@@ -219,10 +261,11 @@ export default function Constellation({ trinkets, onReveal }) {
             <circle cx={cx} cy={cy} r={isMobile?26:34} fill="#E8E0D0" />
             <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={isMobile?10:13} fill="#1A1A1A" fontFamily="Inconsolata,monospace" fontWeight="600">You</text>
 
-            {/* Trinket nodes — animated appearance */}
+            {/* Trinket nodes — planetary orbit into position */}
             {trinkets.map((t,idx)=>{
               if(!visibleNodes.includes(idx)) return null
-              const p=pos[t.id]; if(!p) return null
+              const finalP=pos[t.id]; if(!finalP) return null
+              const p=getAnimatedPos(t.id, finalP)
               const nr=nodeRadius(t.id,t.name)
               const fill=getNodeFill(idx)
               const tc=getTextFill(fill)
@@ -270,7 +313,7 @@ export default function Constellation({ trinkets, onReveal }) {
             const a=trinkets.find(t=>t.id===selectedConn.ids[0])
             const b=trinkets.find(t=>t.id===selectedConn.ids[1])
             return (
-              <div style={{ position:'absolute',bottom:'72px',background:'#1A1A1A',border:'0.5px solid #444',borderRadius:'6px',padding:'12px 16px',maxWidth:'360px',textAlign:'center',animation:'fadeUp 0.2s ease forwards',zIndex:10 }}>
+              <div style={{ position:'absolute',bottom:'72px',background:'#141414',border:'0.5px solid #3A3A3A',borderRadius:'6px',padding:'12px 16px',maxWidth:'360px',textAlign:'center',animation:'fadeUp 0.2s ease forwards',zIndex:10 }}>
                 <div style={{ fontSize:'12px',color:'#E8E0D0',fontFamily:'Inconsolata,monospace',marginBottom:'5px',fontWeight:500 }}>{a?.name} × {b?.name}</div>
                 <div style={{ fontSize:'10px',color:'#A89880',fontFamily:'Inconsolata,monospace',marginBottom:'5px',fontStyle:'italic' }}>{selectedConn.label}</div>
                 {selectedConn.detail&&<div style={{ fontSize:'10px',color:'#888880',fontFamily:'Inconsolata,monospace',lineHeight:1.75 }}>{selectedConn.detail}</div>}
@@ -287,7 +330,7 @@ export default function Constellation({ trinkets, onReveal }) {
         </div>
 
       ) : (
-        <div style={{ position:'fixed',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'3rem',background:'#2A2A2A' }}>
+        <div style={{ position:'fixed',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'3rem',background:'#1E1E1E' }}>
           <button onClick={()=>setView('map')} style={{ position:'absolute',top:'24px',left:'24px',background:'none',border:'none',color:'#888',fontFamily:'Inconsolata,monospace',fontSize:'12px',cursor:'pointer',letterSpacing:'0.06em' }}>← map</button>
           <h2 style={{ fontFamily:'Inconsolata,monospace',fontSize:'clamp(28px,4vw,44px)',fontWeight:400,color:'#E8E0D0',marginBottom:'3rem',letterSpacing:'0.04em' }}>Analysis</h2>
           <div style={{ width:'100%',maxWidth:'560px' }}>

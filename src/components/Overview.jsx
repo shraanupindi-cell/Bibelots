@@ -1,6 +1,6 @@
 export default function Overview({ onStart }) {
   return (
-    <div style={{ position:'fixed',inset:0,background:'#1A1A1A',display:'flex',alignItems:'center',justifyContent:'center' }}>
+    <div style={{ position:'fixed',inset:0,background:'#1E1E1E',display:'flex',alignItems:'center',justifyContent:'center' }}>
       <div style={{ maxWidth:'460px',textAlign:'center',padding:'2rem',animation:'fadeUp 0.6s ease forwards' }}>
         <h1 style={{ fontFamily:'JacquardaBastarda9,cursive',fontSize:'clamp(42px,7vw,72px)',color:'#E8E0D0',marginBottom:'2rem',letterSpacing:'0.02em',lineHeight:1 }}>
           Bibelots
