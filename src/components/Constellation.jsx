@@ -44,21 +44,7 @@ function spreadNodes(rawPos, minDist, iterations=80) {
   return pos
 }
 
-// Zigzag line path — sharp alternating deflections like reference image
-function jaggedPath(x1,y1,x2,y2,amplitude=8,segments=10) {
-  const dx=(x2-x1)/segments,dy=(y2-y1)/segments
-  // Perpendicular direction
-  const len=Math.sqrt((x2-x1)**2+(y2-y1)**2)||1
-  const px=-(y2-y1)/len, py=(x2-x1)/len
-  let d=`M${x1} ${y1}`
-  for(let i=1;i<segments;i++) {
-    const bx=x1+dx*i, by=y1+dy*i
-    const sign=i%2===0?1:-1
-    d+=` L${Math.round(bx+px*amplitude*sign)} ${Math.round(by+py*amplitude*sign)}`
-  }
-  d+=` L${x2} ${y2}`
-  return d
-}
+
 
 export default function Constellation({ trinkets, onReveal }) {
   const [showKnown, setShowKnown] = useState(true)
@@ -98,9 +84,9 @@ export default function Constellation({ trinkets, onReveal }) {
     trinkets.forEach((t, i) => {
       timers.push(setTimeout(() => {
         setVisibleNodes(v => [...v, i])
-        // Animate progress 0→1 over 1200ms using rAF
+        // Animate progress 0→1 over 2800ms using rAF
         const start = performance.now()
-        const duration = 1200
+        const duration = 2800
         const animate = (now) => {
           const elapsed = now - start
           const p = Math.min(elapsed / duration, 1)
@@ -110,13 +96,13 @@ export default function Constellation({ trinkets, onReveal }) {
           if (p < 1) requestAnimationFrame(animate)
         }
         requestAnimationFrame(animate)
-      }, i * 200))
+      }, i * 400))
     })
 
     // Connections appear after all nodes settled
-    const connDelay = trinkets.length * 200 + 1400
+    const connDelay = trinkets.length * 400 + 3200
     activeConns.forEach((_, i) => {
-      timers.push(setTimeout(() => setVisibleConns(v => [...v, i]), connDelay + i * 80))
+      timers.push(setTimeout(() => setVisibleConns(v => [...v, i]), connDelay + i * 160))
     })
     return () => timers.forEach(clearTimeout)
   }, [view, trinkets, showKnown, showInferred])
@@ -137,8 +123,8 @@ export default function Constellation({ trinkets, onReveal }) {
   }
 
   const isMobile = window.innerWidth<600
-  const W=isMobile?360:640,H=isMobile?380:540,cx=W/2,cy=H/2
-  const MAX_R=isMobile?145:245,MIN_R=isMobile?55:80
+  const W=isMobile?380:720,H=isMobile?420:600,cx=W/2,cy=H/2
+  const MAX_R=isMobile?160:290,MIN_R=isMobile?55:85
 
   const trinketYears=useMemo(()=>trinkets.map(t=>parseYear(t.date)||2000),[trinkets])
   const minYear=useMemo(()=>Math.min(...trinketYears),[trinketYears])
@@ -176,15 +162,7 @@ export default function Constellation({ trinkets, onReveal }) {
     return new Set(activeConns.filter(c=>c.ids.includes(hoveredNode)).flatMap(c=>c.ids))
   },[hoveredNode,activeConns])
 
-  // Pre-generate jagged paths (stable across renders)
-  const jaggedPaths = useMemo(()=>{
-    const paths={}
-    activeConns.forEach((c,i)=>{
-      const p1=pos[c.ids[0]],p2=pos[c.ids[1]]
-      if(p1&&p2) paths[i]=jaggedPath(p1.x,p1.y,p2.x,p2.y)
-    })
-    return paths
-  },[activeConns,pos])
+
 
   const lineColor='#E8E0D0'
 
@@ -200,7 +178,7 @@ export default function Constellation({ trinkets, onReveal }) {
             <button onClick={()=>{setView('analysis');setTimeout(()=>setAxesAnimated(true),200)}} style={{ padding:'4px 14px',borderRadius:'99px',border:'0.5px solid #444',background:'none',color:'#888',fontFamily:'Inconsolata,monospace',fontSize:'10px',letterSpacing:'0.06em',cursor:'pointer' }}>analysis →</button>
           </div>
 
-          <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%',maxWidth:`${W}px`,maxHeight:'65vh' }}>
+          <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%',maxWidth:`${W}px`,maxHeight:'70vh' }}>
             {/* Rings — more visible */}
             {sortedYears.map((year,yi)=>{
               const range=maxYear-minYear||1,t=(year-minYear)/range
@@ -236,23 +214,14 @@ export default function Constellation({ trinkets, onReveal }) {
               const isSelected=selectedConn===c
               const isHovered=hoveredNode&&c.ids.includes(hoveredNode)
               const dimmed=hoveredNode&&!isHovered
-              const useJagged=c.type==='historical'||c.type==='personal'
               return (
                 <g key={i} onClick={()=>setSelectedConn(isSelected?null:c)} style={{cursor:'pointer'}}>
                   <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth={14} />
-                  {useJagged&&jaggedPaths[i] ? (
-                    <path d={jaggedPaths[i]}
-                      fill="none"
-                      stroke={lineColor}
-                      strokeWidth={isSelected?style.strokeWidth+1:style.strokeWidth}
-                      opacity={dimmed?0.1:isSelected?1:style.opacity} />
-                  ) : (
-                    <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
-                      stroke={lineColor}
-                      strokeWidth={isSelected?style.strokeWidth+1:style.strokeWidth}
-                      strokeDasharray={style.dasharray}
-                      opacity={dimmed?0.1:isSelected?1:style.opacity} />
-                  )}
+                  <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
+                    stroke={lineColor}
+                    strokeWidth={isSelected?style.strokeWidth+1:style.strokeWidth}
+                    strokeDasharray={style.dasharray}
+                    opacity={dimmed?0.1:isSelected?1:style.opacity} />
                 </g>
               )
             })}

@@ -90,7 +90,7 @@ export default function Splash({ onEnter }) {
           top:`${state.current[i].y}%`,
           fontFamily:'JacquardaBastarda9, cursive',
           fontSize:`${c.size}px`,
-          color:'#F2EDE4',
+          color:'rgba(242,237,228,0.68)',
           pointerEvents:'none',
           userSelect:'none',
           lineHeight:1,
@@ -102,7 +102,7 @@ export default function Splash({ onEnter }) {
       <h1 style={{
         fontFamily:'JacquardaBastarda9, cursive',
         fontSize:'clamp(56px,10vw,96px)',
-        color:'#F2EDE4',
+        color:'rgba(242,237,228,0.68)',
         letterSpacing:'0.01em',
         position:'relative', zIndex:2,
         textAlign:'center', lineHeight:1,
@@ -115,7 +115,7 @@ export default function Splash({ onEnter }) {
         <p style={{
           position:'absolute', bottom:'48px',
           fontFamily:'Inconsolata, monospace',
-          fontSize:'14px', color:'#F2EDE4',
+          fontSize:'14px', color:'rgba(242,237,228,0.68)',
           letterSpacing:'0.18em',
           textTransform:'uppercase',
           fontWeight:600,
