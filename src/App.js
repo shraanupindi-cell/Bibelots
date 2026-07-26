@@ -14,15 +14,16 @@ function getSessionId() {
   return id
 }
 
-// Screen transition wrapper
+// Screen wrapper — keeps DOM mounted to preserve input state
 function Screen({ children, active }) {
   return (
     <div style={{
       position: 'fixed', inset: 0,
       opacity: active ? 1 : 0,
-      transform: active ? 'translateY(0)' : 'translateY(8px)',
-      transition: 'opacity 0.5s ease, transform 0.5s ease',
+      transition: 'opacity 0.45s ease',
       pointerEvents: active ? 'auto' : 'none',
+      zIndex: active ? 1 : 0,
+      visibility: active ? 'visible' : 'hidden',
     }}>
       {children}
     </div>

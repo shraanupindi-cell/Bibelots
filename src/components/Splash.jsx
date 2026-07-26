@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 
 const YEAR_CONFIG = [
-  { year: 1860, left: 6,  speed: 13, size: 14 },
-  { year: 2020, left: 18, speed: 17, size: 12 },
-  { year: 1492, left: 32, speed: 11, size: 16 },
-  { year: 1970, left: 44, speed: 19, size: 11 },
-  { year: 1750, left: 56, speed: 15, size: 13 },
-  { year: 1945, left: 68, speed: 21, size: 12 },
-  { year: 1600, left: 78, speed: 12, size: 15 },
-  { year: 2001, left: 88, speed: 18, size: 11 },
-  { year: 1320, left: 25, speed: 14, size: 14 },
-  { year: 1888, left: 92, speed: 16, size: 12 },
+  { year: 1860, left: 6,  speed: 13, size: 22 },
+  { year: 2020, left: 18, speed: 17, size: 20 },
+  { year: 1492, left: 32, speed: 11, size: 25 },
+  { year: 1970, left: 44, speed: 19, size: 20 },
+  { year: 1750, left: 56, speed: 15, size: 23 },
+  { year: 1945, left: 68, speed: 21, size: 21 },
+  { year: 1600, left: 78, speed: 12, size: 24 },
+  { year: 2001, left: 88, speed: 18, size: 20 },
+  { year: 1320, left: 25, speed: 14, size: 22 },
+  { year: 1888, left: 92, speed: 16, size: 21 },
 ]
 
 const MAX_COUNT = 22
