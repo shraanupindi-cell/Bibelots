@@ -51,6 +51,9 @@ export default function Constellation({ trinkets, onReveal }) {
   const [showInferred, setShowInferred] = useState(true)
   const [selectedConn, setSelectedConn] = useState(null)
   const [hoveredNode, setHoveredNode] = useState(null)
+  const [rippleNode, setRippleNode] = useState(null)
+  const [rippleRadius, setRippleRadius] = useState(0)
+  const rippleAnim = useRef(null)
   const [axesAnimated, setAxesAnimated] = useState(false)
   const [view, setView] = useState('map')
   const [visibleNodes, setVisibleNodes] = useState([])
@@ -221,7 +224,7 @@ export default function Constellation({ trinkets, onReveal }) {
                     stroke={lineColor}
                     strokeWidth={isSelected?style.strokeWidth+1:style.strokeWidth}
                     strokeDasharray={style.dasharray}
-                    opacity={dimmed?0.1:isSelected?1:style.opacity} />
+                    opacity={dimmed?0.1:isSelected?1:style.opacity} style={{ transition: 'opacity 0.4s ease' }} />
                 </g>
               )
             })}
@@ -251,7 +254,14 @@ export default function Constellation({ trinkets, onReveal }) {
               const ly=Math.round(p.y+Math.sin(angle)*(nr+12))
               return (
                 <g key={t.id} onMouseEnter={()=>setHoveredNode(t.id)} onMouseLeave={()=>setHoveredNode(null)} style={{cursor:'default',animation:'nodeAppear 0.3s ease forwards'}}>
-                  <circle cx={p.x} cy={p.y} r={nr} fill={fill} stroke="#E8E0D0" strokeWidth={sw} opacity={dimmed?0.2:1} />
+                  {rippleNode===t.id && rippleRadius > 0 && (
+                    <circle cx={p.x} cy={p.y} r={Math.round(rippleRadius)}
+                      fill="none" stroke="#E8E0D0"
+                      strokeWidth="0.5"
+                      opacity={Math.max(0, 0.4 - (rippleRadius - nr) / 40 * 0.4)} />
+                  )}
+                  <circle cx={p.x} cy={p.y} r={nr} fill={fill} stroke="#E8E0D0" strokeWidth={sw} opacity={dimmed?0.2:1}
+                    style={{ transition: 'opacity 0.3s ease' }} />
                   {lines.map((ln,li)=>(
                     <text key={li} x={p.x} y={startY+li*lh} textAnchor="middle" dominantBaseline="central" fontSize={isMobile?7:8.5} fill={tc} fontFamily="Inconsolata,monospace" fontWeight="500" opacity={dimmed?0.2:1}>{ln}</text>
                   ))}

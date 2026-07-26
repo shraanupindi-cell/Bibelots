@@ -1,19 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 
 const YEAR_CONFIG = [
-  { year: 1860, left: 6,  speed: 13, size: 28 },
-  { year: 2020, left: 18, speed: 17, size: 22 },
-  { year: 1492, left: 32, speed: 11, size: 32 },
-  { year: 1970, left: 44, speed: 19, size: 18 },
-  { year: 1750, left: 56, speed: 15, size: 26 },
-  { year: 1945, left: 68, speed: 21, size: 20 },
-  { year: 1600, left: 78, speed: 12, size: 24 },
-  { year: 2001, left: 88, speed: 18, size: 16 },
-  { year: 1320, left: 25, speed: 14, size: 30 },
-  { year: 1888, left: 92, speed: 16, size: 22 },
+  { year: 1860, left: 6,  speed: 13, size: 14 },
+  { year: 2020, left: 18, speed: 17, size: 12 },
+  { year: 1492, left: 32, speed: 11, size: 16 },
+  { year: 1970, left: 44, speed: 19, size: 11 },
+  { year: 1750, left: 56, speed: 15, size: 13 },
+  { year: 1945, left: 68, speed: 21, size: 12 },
+  { year: 1600, left: 78, speed: 12, size: 15 },
+  { year: 2001, left: 88, speed: 18, size: 11 },
+  { year: 1320, left: 25, speed: 14, size: 14 },
+  { year: 1888, left: 92, speed: 16, size: 12 },
 ]
 
-// Each counter ticks up to start+20 then resets to start
 const MAX_COUNT = 22
 
 export default function Splash({ onEnter }) {
@@ -28,7 +27,6 @@ export default function Splash({ onEnter }) {
     dir: Math.random() > 0.5 ? 1 : -1,
   })))
 
-  // Each counter tracks how many ticks above start
   const offsets = useRef(YEAR_CONFIG.map(() => 0))
 
   useEffect(() => {
@@ -36,7 +34,6 @@ export default function Splash({ onEnter }) {
     window.addEventListener('keydown', handler)
     const ctaTimer = setTimeout(() => setShowCTA(true), 3000)
 
-    // Linear traversal
     let last = performance.now()
     const animate = (now) => {
       const dt = (now - last) / 1000
@@ -56,17 +53,13 @@ export default function Splash({ onEnter }) {
     }
     animRef.current = requestAnimationFrame(animate)
 
-    // Counting — tick up to start+MAX_COUNT then reset
     YEAR_CONFIG.forEach((c, i) => {
       const interval = 68 + i * 7
       countIntervals.current[i] = setInterval(() => {
         offsets.current[i] += 1
-        if (offsets.current[i] > MAX_COUNT) {
-          offsets.current[i] = 0 // reset
-        }
-        const display = c.year + offsets.current[i]
+        if (offsets.current[i] > MAX_COUNT) offsets.current[i] = 0
         if (countRefs.current[i]) {
-          countRefs.current[i].textContent = display
+          countRefs.current[i].textContent = c.year + offsets.current[i]
         }
       }, interval)
     })
@@ -93,7 +86,7 @@ export default function Splash({ onEnter }) {
           top: `${state.current[i].y}%`,
           fontFamily: 'JacquardaBastarda9, cursive',
           fontSize: `${c.size}px`,
-          color: 'rgba(242,237,228,0.68)',
+          color: 'rgba(242,237,228,0.5)',
           pointerEvents: 'none',
           userSelect: 'none',
           lineHeight: 1,
@@ -117,15 +110,16 @@ export default function Splash({ onEnter }) {
         <p style={{
           position: 'absolute', bottom: '48px',
           fontFamily: 'Inconsolata, monospace',
-          fontSize: '14px', color: '#F2EDE4',
+          fontSize: '11px', color: '#F2EDE4',
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
           fontWeight: 600,
           animation: 'fadeIn 0.8s ease forwards',
           zIndex: 2,
-          border: '1px solid rgba(242,237,228,0.6)',
-          padding: '10px 24px',
+          border: '1px solid rgba(242,237,228,0.5)',
+          padding: '9px 22px',
           borderRadius: '99px',
+          opacity: 0.85,
         }}>
           click anywhere to begin
         </p>
