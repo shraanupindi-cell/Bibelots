@@ -15,7 +15,7 @@ const YEAR_CONFIG = [
 
 const MAX_COUNT = 22
 
-export default function Splash({ onEnter }) {
+export default function Splash({ onEnter, active }) {
   const refs = useRef([])
   const animRef = useRef(null)
   const countRefs = useRef([])
@@ -30,7 +30,11 @@ export default function Splash({ onEnter }) {
   const offsets = useRef(YEAR_CONFIG.map(() => 0))
 
   useEffect(() => {
-    const handler = () => onEnter()
+    if (!active) return
+    const handler = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return
+      onEnter()
+    }
     window.addEventListener('keydown', handler)
     const ctaTimer = setTimeout(() => setShowCTA(true), 3000)
 

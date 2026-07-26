@@ -72,7 +72,7 @@ export default function App() {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <Screen active={screen === 'splash'}>
-        <Splash onEnter={() => go('overview')} />
+        <Splash onEnter={() => go('overview')} active={screen === 'splash'} />
       </Screen>
       <Screen active={screen === 'overview'}>
         <Overview onStart={() => go('entry')} />
