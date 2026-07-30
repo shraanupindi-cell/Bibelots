@@ -46,7 +46,7 @@ function spreadNodes(rawPos, minDist, iterations=80) {
 
 
 
-export default function Constellation({ trinkets, onReveal }) {
+export default function Constellation({ trinkets, onReveal, onBack }) {
   const [showKnown, setShowKnown] = useState(true)
   const [showInferred, setShowInferred] = useState(true)
   const [selectedConn, setSelectedConn] = useState(null)
