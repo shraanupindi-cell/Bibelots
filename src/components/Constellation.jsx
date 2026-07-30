@@ -199,7 +199,7 @@ export default function Constellation({ trinkets, onReveal }) {
               </button>
             </div>
           )}
-          {trinkets.length >= 3 && <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%',maxWidth:`${W}px`,maxHeight:'58vh' }}>
+          {trinkets.length >= 3 && (<svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%',maxWidth:`${W}px`,maxHeight:'58vh' }}>
             {/* Rings — more visible */}
             {sortedYears.map((year,yi)=>{
               const range=maxYear-minYear||1,t=(year-minYear)/range
@@ -287,9 +287,9 @@ export default function Constellation({ trinkets, onReveal }) {
                 </g>
               )
             })}
-          </svg>
+          </svg>)}
 
-          {/* Legend — line styles */}
+          {/* Legend */}
           <div style={{ display:'flex',gap:'14px',flexWrap:'wrap',justifyContent:'center',marginTop:'6px' }}>
             {usedTypes.map(type=>{
               const s=LINE_STYLES[type]||LINE_STYLES.historical
@@ -318,9 +318,6 @@ export default function Constellation({ trinkets, onReveal }) {
               </div>
             )
           })()}
-
-          </>
-          }
 
           {/* First-use tooltip */}
           {showTip && activeConns.length > 0 && (
