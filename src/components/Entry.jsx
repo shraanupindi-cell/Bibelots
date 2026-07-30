@@ -18,9 +18,17 @@ const pill = {
 }
 
 const pillSel = {
-  ...pill, cursor:'pointer', appearance:'none', WebkitAppearance:'none',
-  backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%233A3020'/%3E%3C/svg%3E")`,
-  backgroundRepeat:'no-repeat', backgroundPosition:'right 14px center', paddingRight:'32px',
+  ...pill,
+  cursor:'pointer',
+  appearance:'none',
+  WebkitAppearance:'none',
+  MozAppearance:'none',
+  backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%233A3020'/%3E%3C/svg%3E")`,
+  backgroundRepeat:'no-repeat',
+  backgroundPosition:'right 14px center',
+  backgroundSize:'8px 5px',
+  paddingRight:'34px',
+  textAlign:'left',
 }
 
 const EMPTY = {
@@ -41,11 +49,11 @@ function EditableItem({ trinket, onSave, onRemove, onCancel }) {
           <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.date||''} onChange={e=>set('date',e.target.value)} placeholder="Date" />
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
-          <select style={{...pillSel, fontSize:'11px', background:'none', backgroundImage:pillSel.backgroundImage, backgroundRepeat:'no-repeat', backgroundPosition:'right 12px center'}} value={form.emotion||''} onChange={e=>set('emotion',e.target.value)}>
+          <select style={{...pillSel, fontSize:'11px'}} value={form.emotion||''} onChange={e=>set('emotion',e.target.value)}>
             <option value="">Emotion</option>
             {EMOTIONS.map(e=><option key={e}>{e}</option>)}
           </select>
-          <select style={{...pillSel, fontSize:'11px', background:'none', backgroundImage:pillSel.backgroundImage, backgroundRepeat:'no-repeat', backgroundPosition:'right 12px center'}} value={form.acquisition||''} onChange={e=>set('acquisition',e.target.value)}>
+          <select style={{...pillSel, fontSize:'11px'}} value={form.acquisition||''} onChange={e=>set('acquisition',e.target.value)}>
             <option value="">How got it</option>
             {ACQUISITIONS.map(a=><option key={a}>{a}</option>)}
           </select>
@@ -92,11 +100,11 @@ export default function Entry({ trinkets, onAdd, onRemove, onUpdate, onMap }) {
           </div>
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
-            <select style={{...pillSel, background:'none', backgroundImage:pillSel.backgroundImage, backgroundRepeat:'no-repeat', backgroundPosition:'right 14px center'}} value={form.emotion} onChange={e=>set('emotion',e.target.value)}>
+            <select style={pillSel} value={form.emotion} onChange={e=>set('emotion',e.target.value)}>
               <option value="">Emotional tag ▾</option>
               {EMOTIONS.map(e=><option key={e}>{e}</option>)}
             </select>
-            <select style={{...pillSel, background:'none', backgroundImage:pillSel.backgroundImage, backgroundRepeat:'no-repeat', backgroundPosition:'right 14px center'}} value={form.acquisition} onChange={e=>set('acquisition',e.target.value)}>
+            <select style={pillSel} value={form.acquisition} onChange={e=>set('acquisition',e.target.value)}>
               <option value="">How did you get it? ▾</option>
               {ACQUISITIONS.map(a=><option key={a}>{a}</option>)}
             </select>
@@ -104,7 +112,7 @@ export default function Entry({ trinkets, onAdd, onRemove, onUpdate, onMap }) {
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
             <input style={pill} placeholder="Material" value={form.material} onChange={e=>set('material',e.target.value)} />
-            <select style={{...pillSel, background:'none', backgroundImage:pillSel.backgroundImage, backgroundRepeat:'no-repeat', backgroundPosition:'right 14px center'}} value={form.material_type} onChange={e=>set('material_type',e.target.value)}>
+            <select style={pillSel} value={form.material_type} onChange={e=>set('material_type',e.target.value)}>
               <option value="">Handmade or industrial? ▾</option>
               <option value="craft">handmade / craft</option>
               <option value="industrial">industrial</option>
@@ -117,8 +125,8 @@ export default function Entry({ trinkets, onAdd, onRemove, onUpdate, onMap }) {
 
         <div style={{ display:'flex', gap:'10px', justifyContent:'center', marginBottom:'14px' }}>
           <button onClick={handleAdd} style={{ padding:'10px 28px', borderRadius:'99px', border:'0.5px solid #2A2010', background:'#2A2010', color:'#E8E0D0', fontFamily:'Inconsolata,monospace', fontSize:'12px', letterSpacing:'0.06em', transition:'opacity 0.2s' }}
-            onMouseEnter={e=>e.currentTarget.style.opacity='0.8'}
-            onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
+            onMouseEnter={e=>{e.currentTarget.style.background='#E8E0D0';e.currentTarget.style.color='#2A2010';e.currentTarget.style.border='0.5px solid #2A2010'}}
+            onMouseLeave={e=>{e.currentTarget.style.background='#2A2010';e.currentTarget.style.color='#E8E0D0';e.currentTarget.style.border='0.5px solid #2A2010'}}>
             Add Object
           </button>
           <button onClick={()=>setForm(EMPTY)} style={{ padding:'10px 28px', borderRadius:'99px', border:'0.5px solid #2A2010', background:'none', color:'#2A2010', fontFamily:'Inconsolata,monospace', fontSize:'12px', letterSpacing:'0.06em' }}>
@@ -165,7 +173,7 @@ export default function Entry({ trinkets, onAdd, onRemove, onUpdate, onMap }) {
             fontFamily:'Inconsolata,monospace', fontSize:'13px', letterSpacing:'0.08em',
             cursor:trinkets.length>=3?'pointer':'not-allowed',
             transition:'all 0.3s ease',
-            animation: trinkets.length===3 ? 'pulse 0.6s ease 2' : 'none',
+
           }}>
             Begin Mapping
           </button>

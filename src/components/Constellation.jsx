@@ -188,7 +188,18 @@ export default function Constellation({ trinkets, onReveal }) {
             <button onClick={()=>{setView('analysis');setTimeout(()=>setAxesAnimated(true),200)}} style={{ padding:'4px 14px',borderRadius:'99px',border:'0.5px solid #444',background:'none',color:'#888',fontFamily:'Inconsolata,monospace',fontSize:'10px',letterSpacing:'0.06em',cursor:'pointer' }}>analysis →</button>
           </div>
 
-          <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%',maxWidth:`${W}px`,maxHeight:'58vh' }}>
+          {trinkets.length < 3 && (
+            <div style={{ textAlign:'center', padding:'3rem 1rem', animation:'fadeUp 0.4s ease forwards' }}>
+              <p style={{ fontFamily:'JacquardaBastarda9,cursive', fontSize:'28px', color:'#E8E0D0', marginBottom:'12px' }}>not enough objects</p>
+              <p style={{ fontFamily:'Inconsolata,monospace', fontSize:'12px', color:'#808078', lineHeight:1.8, marginBottom:'20px' }}>
+                add at least 3 objects to generate your constellation
+              </p>
+              <button onClick={onBack} style={{ padding:'10px 28px', borderRadius:'99px', border:'0.5px solid #E8E0D0', background:'none', color:'#E8E0D0', fontFamily:'Inconsolata,monospace', fontSize:'12px', letterSpacing:'0.06em', cursor:'pointer' }}>
+                ← add more objects
+              </button>
+            </div>
+          )}
+          {trinkets.length >= 3 && <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%',maxWidth:`${W}px`,maxHeight:'58vh' }}>
             {/* Rings — more visible */}
             {sortedYears.map((year,yi)=>{
               const range=maxYear-minYear||1,t=(year-minYear)/range
@@ -197,7 +208,7 @@ export default function Constellation({ trinkets, onReveal }) {
                 <g key={year}>
                   <circle cx={cx} cy={cy} r={Math.round(r)} fill="none" stroke="#585850" strokeWidth="1.2" strokeDasharray="2 5" />
                   {(yi===0||yi===sortedYears.length-1)&&(
-                    <text x={Math.min(cx+Math.round(r)+8,W-48)} y={cy} fontSize="11" fill="#A0A090" fontFamily="Inconsolata,monospace" dominantBaseline="central" fontStyle="italic" fontWeight="500">
+                    <text x={Math.min(cx+Math.round(r)+8,W-48)} y={cy} fontSize="12" fill="#B0B0A0" fontFamily="Inconsolata,monospace" dominantBaseline="central" fontStyle="italic" fontWeight="500">
                       {yi===0?`oldest · ${year}`:`newest · ${year}`}
                     </text>
                   )}
@@ -270,9 +281,9 @@ export default function Constellation({ trinkets, onReveal }) {
                   <circle cx={p.x} cy={p.y} r={nr} fill={fill} stroke="#E8E0D0" strokeWidth={sw} opacity={dimmed?0.2:1}
                     style={{ transition: 'opacity 0.3s ease' }} />
                   {lines.map((ln,li)=>(
-                    <text key={li} x={p.x} y={startY+li*lh} textAnchor="middle" dominantBaseline="central" fontSize={isMobile?7:8.5} fill={tc} fontFamily="Inconsolata,monospace" fontWeight="500" opacity={dimmed?0.2:1}>{ln}</text>
+                    <text key={li} x={p.x} y={startY+li*lh} textAnchor="middle" dominantBaseline="central" fontSize={isMobile?8:10} fill={tc} fontFamily="Inconsolata,monospace" fontWeight="500" opacity={dimmed?0.2:1}>{ln}</text>
                   ))}
-                  {t.date&&<text x={lx} y={ly} textAnchor="middle" fontSize={isMobile?8:9.5} fill="#888880" fontFamily="Inconsolata,monospace" opacity={dimmed?0.1:1}>{t.date}</text>}
+                  {t.date&&<text x={lx} y={ly} textAnchor="middle" fontSize={isMobile?9:11} fill="#888880" fontFamily="Inconsolata,monospace" opacity={dimmed?0.1:1}>{t.date}</text>}
                 </g>
               )
             })}
@@ -287,11 +298,11 @@ export default function Constellation({ trinkets, onReveal }) {
                   <svg width="24" height="12">
                     <line x1="0" y1="6" x2="24" y2="6" stroke="#E8E0D0" strokeWidth={s.strokeWidth} strokeDasharray={s.dasharray} opacity={s.opacity} />
                   </svg>
-                  <span style={{ fontFamily:'Inconsolata,monospace',fontSize:'10px',color:'#A0A090' }}>{type}</span>
+                  <span style={{ fontFamily:'Inconsolata,monospace',fontSize:'11px',color:'#B0B0A0' }}>{type}</span>
                 </div>
               )
             })}
-            <span style={{ fontFamily:'Inconsolata,monospace',fontSize:'10px',color:'#808078' }}>outer = oldest · inner = newest</span>
+            <span style={{ fontFamily:'Inconsolata,monospace',fontSize:'11px',color:'#909088' }}>outer = oldest · inner = newest</span>
           </div>
 
           {/* Connection tooltip */}
@@ -308,11 +319,28 @@ export default function Constellation({ trinkets, onReveal }) {
             )
           })()}
 
-          <button onClick={onReveal} style={{ marginTop:'10px',padding:'10px 36px',borderRadius:'12px',border:'1px solid #E8E0D0',background:'none',color:'#E8E0D0',fontFamily:'JacquardaBastarda9,cursive',fontSize:'20px',cursor:'pointer',transition:'all 0.2s' }}
-            onMouseEnter={e=>{e.currentTarget.style.background='#E8E0D0';e.currentTarget.style.color='#2A2A2A'}}
-            onMouseLeave={e=>{e.currentTarget.style.background='none';e.currentTarget.style.color='#E8E0D0'}}>
-            Reveal Archetype
-          </button>
+          </>
+          }
+
+          {/* First-use tooltip */}
+          {showTip && activeConns.length > 0 && (
+            <p style={{ fontSize:'11px', color:'#808078', fontFamily:'Inconsolata,monospace', letterSpacing:'0.04em', marginTop:'6px', fontStyle:'italic' }}>
+              tap any connection line to see what links these objects
+            </p>
+          )}
+
+          <div style={{ display:'flex', gap:'10px', alignItems:'center', marginTop:'10px', flexWrap:'wrap', justifyContent:'center' }}>
+            <button onClick={onBack} style={{ padding:'9px 20px', borderRadius:'99px', border:'0.5px solid #686858', background:'none', color:'#A0A090', fontFamily:'Inconsolata,monospace', fontSize:'11px', cursor:'pointer', letterSpacing:'0.06em', transition:'all 0.2s' }}
+              onMouseEnter={e=>{e.currentTarget.style.color='#E8E0D0';e.currentTarget.style.borderColor='#E8E0D0'}}
+              onMouseLeave={e=>{e.currentTarget.style.color='#A0A090';e.currentTarget.style.borderColor='#686858'}}>
+              ← add more objects
+            </button>
+            <button onClick={onReveal} style={{ padding:'10px 36px', borderRadius:'12px', border:'1px solid #E8E0D0', background:'none', color:'#E8E0D0', fontFamily:'JacquardaBastarda9,cursive', fontSize:'20px', cursor:'pointer', transition:'all 0.2s' }}
+              onMouseEnter={e=>{e.currentTarget.style.background='#E8E0D0';e.currentTarget.style.color='#1E1E1E'}}
+              onMouseLeave={e=>{e.currentTarget.style.background='none';e.currentTarget.style.color='#E8E0D0'}}>
+              Reveal Archetype
+            </button>
+          </div>
         </div>
 
       ) : (
