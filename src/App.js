@@ -8,13 +8,14 @@ import Loading from './components/Loading'
 import Constellation from './components/Constellation'
 import Reveal from './components/Reveal'
 
+const LOCAL_KEY = 'bibelots_trinkets'
+
 function getSessionId() {
   let id = sessionStorage.getItem('bibelots_session')
   if (!id) { id = crypto.randomUUID(); sessionStorage.setItem('bibelots_session', id) }
   return id
 }
 
-// Screen wrapper — keeps DOM mounted to preserve input state
 function Screen({ children, active }) {
   return (
     <div style={{
@@ -32,35 +33,76 @@ function Screen({ children, active }) {
 
 export default function App() {
   const [screen, setScreen] = useState('splash')
-  const [prev, setPrev] = useState(null)
   const [trinkets, setTrinkets] = useState([])
   const sessionId = getSessionId()
 
-  useEffect(() => { loadTrinkets() }, [])
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const local = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]')
+      if (local.length > 0) {
+        setTrinkets(local)
+        return
+      }
+    } catch(e) {}
+    loadFromSupabase()
+  }, [])
 
-  async function loadTrinkets() {
+  // Persist to localStorage whenever trinkets change
+  useEffect(() => {
+    if (trinkets.length > 0) {
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(trinkets))
+    }
+  }, [trinkets])
+
+  async function loadFromSupabase() {
     const { data, error } = await supabase
       .from('trinkets').select('*')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true })
-    if (data && !error) setTrinkets(data)
+    if (data && !error && data.length > 0) {
+      setTrinkets(data)
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(data))
+    }
   }
 
-  function go(next) {
-    setPrev(screen)
-    setScreen(next)
-  }
+  function go(next) { setScreen(next) }
 
   async function addTrinket(obj) {
-    const newT = { ...obj, session_id: sessionId }
-    const { data, error } = await supabase.from('trinkets').insert([newT]).select()
-    if (data && !error) setTrinkets(prev => [...prev, data[0]])
-    else setTrinkets(prev => [...prev, { ...newT, id: Date.now() }])
+    const newT = { ...obj, session_id: sessionId, id: Date.now() }
+    setTrinkets(prev => {
+      const updated = [...prev, newT]
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(updated))
+      return updated
+    })
+    // Also save to Supabase (fire and forget)
+    supabase.from('trinkets').insert([{ ...obj, session_id: sessionId }]).select().then(({ data }) => {
+      if (data && data[0]) {
+        setTrinkets(prev => {
+          const updated = prev.map(t => t.id === newT.id ? data[0] : t)
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(updated))
+          return updated
+        })
+      }
+    })
   }
 
   async function removeTrinket(id) {
-    await supabase.from('trinkets').delete().eq('id', id)
-    setTrinkets(prev => prev.filter(t => t.id !== id))
+    setTrinkets(prev => {
+      const updated = prev.filter(t => t.id !== id)
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(updated))
+      return updated
+    })
+    supabase.from('trinkets').delete().eq('id', id)
+  }
+
+  async function updateTrinket(updated) {
+    setTrinkets(prev => {
+      const list = prev.map(t => t.id === updated.id ? { ...t, ...updated } : t)
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(list))
+      return list
+    })
+    supabase.from('trinkets').update(updated).eq('id', updated.id)
   }
 
   function goMap() {
@@ -78,7 +120,7 @@ export default function App() {
         <Overview onStart={() => go('entry')} />
       </Screen>
       <Screen active={screen === 'entry'}>
-        <Entry trinkets={trinkets} onAdd={addTrinket} onRemove={removeTrinket} onMap={goMap} />
+        <Entry trinkets={trinkets} onAdd={addTrinket} onRemove={removeTrinket} onUpdate={updateTrinket} onMap={goMap} />
       </Screen>
       <Screen active={screen === 'loading'}>
         <Loading />

@@ -51,6 +51,7 @@ export default function Constellation({ trinkets, onReveal }) {
   const [showInferred, setShowInferred] = useState(true)
   const [selectedConn, setSelectedConn] = useState(null)
   const [hoveredNode, setHoveredNode] = useState(null)
+  const [showTip, setShowTip] = useState(() => !localStorage.getItem('bibelots_tip_seen'))
   const [rippleNode, setRippleNode] = useState(null)
   const [rippleRadius, setRippleRadius] = useState(0)
   const rippleAnim = useRef(null)
@@ -140,7 +141,13 @@ export default function Constellation({ trinkets, onReveal }) {
       const r=MAX_R-yearT*(MAX_R-MIN_R)
       const goldenAngle=2.399963
       const angle=i*goldenAngle-Math.PI/2
-      p[t.id]={x:Math.round(cx+r*Math.cos(angle)),y:Math.round(cy+r*Math.sin(angle))}
+      const rawX=cx+r*Math.cos(angle), rawY=cy+r*Math.sin(angle)
+      // Clamp so nodes never go too close to SVG edges
+      const margin=52
+      p[t.id]={
+        x:Math.round(Math.max(margin, Math.min(W-margin, rawX))),
+        y:Math.round(Math.max(margin, Math.min(H-margin, rawY)))
+      }
     })
     return p
   },[trinkets,trinketYears,minYear,maxYear,cx,cy,MAX_R,MIN_R])
@@ -181,17 +188,17 @@ export default function Constellation({ trinkets, onReveal }) {
             <button onClick={()=>{setView('analysis');setTimeout(()=>setAxesAnimated(true),200)}} style={{ padding:'4px 14px',borderRadius:'99px',border:'0.5px solid #444',background:'none',color:'#888',fontFamily:'Inconsolata,monospace',fontSize:'10px',letterSpacing:'0.06em',cursor:'pointer' }}>analysis →</button>
           </div>
 
-          <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%',maxWidth:`${W}px`,maxHeight:'70vh' }}>
+          <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%',maxWidth:`${W}px`,maxHeight:'58vh' }}>
             {/* Rings — more visible */}
             {sortedYears.map((year,yi)=>{
               const range=maxYear-minYear||1,t=(year-minYear)/range
               const r=MAX_R-t*(MAX_R-MIN_R)
               return (
                 <g key={year}>
-                  <circle cx={cx} cy={cy} r={Math.round(r)} fill="none" stroke="#383830" strokeWidth="1" strokeDasharray="2 6" />
+                  <circle cx={cx} cy={cy} r={Math.round(r)} fill="none" stroke="#585850" strokeWidth="1.2" strokeDasharray="2 5" />
                   {(yi===0||yi===sortedYears.length-1)&&(
-                    <text x={Math.min(cx+Math.round(r)+6,W-44)} y={cy} fontSize="9" fill="#666658" fontFamily="Inconsolata,monospace" dominantBaseline="central" fontStyle="italic">
-                      {yi===0?`oldest (${year})`:`newest (${year})`}
+                    <text x={Math.min(cx+Math.round(r)+8,W-48)} y={cy} fontSize="11" fill="#A0A090" fontFamily="Inconsolata,monospace" dominantBaseline="central" fontStyle="italic" fontWeight="500">
+                      {yi===0?`oldest · ${year}`:`newest · ${year}`}
                     </text>
                   )}
                 </g>
@@ -218,7 +225,7 @@ export default function Constellation({ trinkets, onReveal }) {
               const isHovered=hoveredNode&&c.ids.includes(hoveredNode)
               const dimmed=hoveredNode&&!isHovered
               return (
-                <g key={i} onClick={()=>setSelectedConn(isSelected?null:c)} style={{cursor:'pointer'}}>
+                <g key={i} onClick={()=>{ setSelectedConn(isSelected?null:c); if(showTip){ setShowTip(false); localStorage.setItem('bibelots_tip_seen','1') } }} style={{cursor:'pointer'}}>
                   <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth={14} />
                   <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
                     stroke={lineColor}
@@ -280,11 +287,11 @@ export default function Constellation({ trinkets, onReveal }) {
                   <svg width="24" height="12">
                     <line x1="0" y1="6" x2="24" y2="6" stroke="#E8E0D0" strokeWidth={s.strokeWidth} strokeDasharray={s.dasharray} opacity={s.opacity} />
                   </svg>
-                  <span style={{ fontFamily:'Inconsolata,monospace',fontSize:'9px',color:'#888880' }}>{type}</span>
+                  <span style={{ fontFamily:'Inconsolata,monospace',fontSize:'10px',color:'#A0A090' }}>{type}</span>
                 </div>
               )
             })}
-            <span style={{ fontFamily:'Inconsolata,monospace',fontSize:'9px',color:'#555548' }}>outer = oldest · inner = newest</span>
+            <span style={{ fontFamily:'Inconsolata,monospace',fontSize:'10px',color:'#808078' }}>outer = oldest · inner = newest</span>
           </div>
 
           {/* Connection tooltip */}
@@ -292,7 +299,7 @@ export default function Constellation({ trinkets, onReveal }) {
             const a=trinkets.find(t=>t.id===selectedConn.ids[0])
             const b=trinkets.find(t=>t.id===selectedConn.ids[1])
             return (
-              <div style={{ position:'absolute',bottom:'72px',background:'#141414',border:'0.5px solid #3A3A3A',borderRadius:'6px',padding:'12px 16px',maxWidth:'360px',textAlign:'center',animation:'fadeUp 0.2s ease forwards',zIndex:10 }}>
+              <div style={{ position:'absolute',bottom:'72px',background:'#141414',border:'0.5px solid #3A3A3A',borderRadius:'6px',padding:'12px 16px',maxWidth:'400px',textAlign:'center',maxHeight:'220px',overflowY:'auto',animation:'fadeUp 0.2s ease forwards',zIndex:10 }}>
                 <div style={{ fontSize:'12px',color:'#E8E0D0',fontFamily:'Inconsolata,monospace',marginBottom:'5px',fontWeight:500 }}>{a?.name} × {b?.name}</div>
                 <div style={{ fontSize:'10px',color:'#A89880',fontFamily:'Inconsolata,monospace',marginBottom:'5px',fontStyle:'italic' }}>{selectedConn.label}</div>
                 {selectedConn.detail&&<div style={{ fontSize:'10px',color:'#888880',fontFamily:'Inconsolata,monospace',lineHeight:1.75 }}>{selectedConn.detail}</div>}
