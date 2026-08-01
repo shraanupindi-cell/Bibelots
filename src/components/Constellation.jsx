@@ -53,6 +53,8 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
   const [hoveredNode, setHoveredNode] = useState(null)
   const [showTip, setShowTip] = useState(() => !localStorage.getItem('bibelots_tip_seen'))
   const [rippleNode, setRippleNode] = useState(null)
+  const [orbitOffset, setOrbitOffset] = useState(0)
+  const orbitFrameRef = useRef(null)
   const [rippleRadius, setRippleRadius] = useState(0)
   const rippleAnim = useRef(null)
   const [axesAnimated, setAxesAnimated] = useState(false)
@@ -112,6 +114,20 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
   }, [view, trinkets, showKnown, showInferred])
 
   // Get animated position for a node — orbits from outer ring to final pos
+  // Apply slow orbital drift to settled nodes
+  const getDriftedPos = (id, finalPos, idx) => {
+    if (!finalPos) return finalPos
+    const progress = nodeProgress[id] ?? 0
+    if (progress < 1) return finalPos // don't drift during entry animation
+    // Small slow circular drift — radius 3px, each node at different phase
+    const phase = (idx / Math.max(trinkets.length, 1)) * 2 * Math.PI
+    const driftR = 3
+    return {
+      x: Math.round(finalPos.x + Math.cos(orbitOffset + phase) * driftR),
+      y: Math.round(finalPos.y + Math.sin(orbitOffset + phase) * driftR),
+    }
+  }
+
   const getAnimatedPos = (id, finalPos) => {
     const p = nodeProgress[id] ?? 0
     if (p >= 1) return finalPos
@@ -220,7 +236,8 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
             {trinkets.map((t,i)=>{
               if(!visibleNodes.includes(i)) return null
               const finalP=pos[t.id]; if(!finalP) return null
-              const p=getAnimatedPos(t.id, finalP)
+              const animP=getAnimatedPos(t.id, finalP)
+              const p=getDriftedPos(t.id, animP, idx)
               const dx=p.x-cx,dy=p.y-cy,d=Math.sqrt(dx*dx+dy*dy)||1
               const nr=nodeRadius(t.id,t.name)
               return <line key={t.id} x1={Math.round(cx+(dx/d)*36)} y1={Math.round(cy+(dy/d)*36)} x2={Math.round(p.x-(dx/d)*nr)} y2={Math.round(p.y-(dy/d)*nr)} stroke="#2A2A28" strokeWidth="0.8" />
@@ -241,7 +258,8 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
                   <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
                     stroke={lineColor}
                     strokeWidth={isSelected?style.strokeWidth+1:style.strokeWidth}
-                    strokeDasharray={style.dasharray}
+                    strokeDasharray={c.inferred ? '5 3' : style.dasharray}
+                    strokeDashoffset={c.inferred ? orbitOffset * -8 : 0}
                     opacity={dimmed?0.1:isSelected?1:style.opacity} style={{ transition: 'opacity 0.4s ease' }} />
                 </g>
               )
@@ -255,7 +273,8 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
             {trinkets.map((t,idx)=>{
               if(!visibleNodes.includes(idx)) return null
               const finalP=pos[t.id]; if(!finalP) return null
-              const p=getAnimatedPos(t.id, finalP)
+              const animP=getAnimatedPos(t.id, finalP)
+              const p=getDriftedPos(t.id, animP, idx)
               const nr=nodeRadius(t.id,t.name)
               const fill=getNodeFill(idx)
               const tc=getTextFill(fill)

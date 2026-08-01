@@ -27,9 +27,15 @@ const pillSel = {
   backgroundRepeat:'no-repeat',
   backgroundPosition:'right 14px center',
   backgroundSize:'8px 5px',
+  backgroundClip:'padding-box',
   paddingRight:'34px',
   textAlign:'left',
+  msAppearance:'none',
 }
+
+// Wrapper for select to hide any native arrow on Windows browsers
+const selWrap = { position:'relative', width:'100%' }
+const selOverlay = { position:'absolute', right:'10px', top:'50%', transform:'translateY(-50%)', pointerEvents:'none', width:'8px', height:'5px' }
 
 const EMPTY = {
   name:'', place:'', date:'', emotion:'',

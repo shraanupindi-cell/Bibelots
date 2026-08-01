@@ -26,3 +26,7 @@ input,select,textarea { font-family:'Inconsolata',monospace; }
   0%,100% { box-shadow: 0 0 0 0 rgba(42,32,16,0.4); }
   50% { box-shadow: 0 0 0 8px rgba(42,32,16,0); }
 }
+
+/* Hide native select arrow on all browsers */
+select::-ms-expand { display: none; }
+select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
