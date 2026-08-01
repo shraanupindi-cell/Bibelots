@@ -52,6 +52,9 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
   const [selectedConn, setSelectedConn] = useState(null)
   const [hoveredNode, setHoveredNode] = useState(null)
   const [showTip, setShowTip] = useState(() => !localStorage.getItem('bibelots_tip_seen'))
+  const [aiConnections, setAiConnections] = useState([])
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState(null)
   const [rippleNode, setRippleNode] = useState(null)
   const [orbitOffset, setOrbitOffset] = useState(0)
   const orbitFrameRef = useRef(null)
@@ -65,10 +68,20 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
 
   const knownConns = findKnownConnections(trinkets)
   const inferredConns = findInferredConnections(trinkets)
-  const activeConns = useMemo(()=>[
-    ...(showKnown?knownConns:[]),
-    ...(showInferred?inferredConns:[]),
-  ],[showKnown,showInferred,trinkets])
+  const activeConns = useMemo(()=>{
+    const base = [
+      ...(showKnown?knownConns:[]),
+      ...(showInferred?inferredConns:[]),
+    ]
+    if (!showInferred) return base
+    // Add AI connections, dedup by pair
+    const existingPairs = new Set(base.map(c=>`${Math.min(...c.ids)}-${Math.max(...c.ids)}`))
+    const aiFiltered = aiConnections.filter(c => {
+      const key = `${Math.min(...c.ids)}-${Math.max(...c.ids)}`
+      return !existingPairs.has(key)
+    })
+    return [...base, ...aiFiltered]
+  },[showKnown,showInferred,trinkets,aiConnections])
   const counts = connCountMap(trinkets)
   const axes = getAxisScores(trinkets)
 
@@ -121,7 +134,7 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
     if (progress < 1) return finalPos // don't drift during entry animation
     // Small slow circular drift — radius 3px, each node at different phase
     const phase = (idx / Math.max(trinkets.length, 1)) * 2 * Math.PI
-    const driftR = 3
+    const driftR = 6
     return {
       x: Math.round(finalPos.x + Math.cos(orbitOffset + phase) * driftR),
       y: Math.round(finalPos.y + Math.sin(orbitOffset + phase) * driftR),
@@ -259,7 +272,7 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
                     stroke={lineColor}
                     strokeWidth={isSelected?style.strokeWidth+1:style.strokeWidth}
                     strokeDasharray={c.inferred ? '5 3' : style.dasharray}
-                    strokeDashoffset={c.inferred ? orbitOffset * -8 : 0}
+                    strokeDashoffset={c.inferred ? orbitOffset * -20 : 0}
                     opacity={dimmed?0.1:isSelected?1:style.opacity} style={{ transition: 'opacity 0.4s ease' }} />
                 </g>
               )
