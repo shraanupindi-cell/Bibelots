@@ -237,7 +237,7 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
               if(!visibleNodes.includes(i)) return null
               const finalP=pos[t.id]; if(!finalP) return null
               const animP=getAnimatedPos(t.id, finalP)
-              const p=getDriftedPos(t.id, animP, idx)
+              const p=getDriftedPos(t.id, animP, i)
               const dx=p.x-cx,dy=p.y-cy,d=Math.sqrt(dx*dx+dy*dy)||1
               const nr=nodeRadius(t.id,t.name)
               return <line key={t.id} x1={Math.round(cx+(dx/d)*36)} y1={Math.round(cy+(dy/d)*36)} x2={Math.round(p.x-(dx/d)*nr)} y2={Math.round(p.y-(dy/d)*nr)} stroke="#2A2A28" strokeWidth="0.8" />

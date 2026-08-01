@@ -17,25 +17,38 @@ const pill = {
   color:'#2A2010', outline:'none', textAlign:'center', letterSpacing:'0.03em',
 }
 
-const pillSel = {
-  ...pill,
-  cursor:'pointer',
-  appearance:'none',
-  WebkitAppearance:'none',
-  MozAppearance:'none',
-  backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%233A3020'/%3E%3C/svg%3E")`,
-  backgroundRepeat:'no-repeat',
-  backgroundPosition:'right 14px center',
-  backgroundSize:'8px 5px',
-  backgroundClip:'padding-box',
-  paddingRight:'34px',
-  textAlign:'left',
-  msAppearance:'none',
+// SelectWrap — renders select inside a div with custom arrow overlay
+// This is the only reliable cross-browser fix for double arrows on Windows
+function Sel({ value, onChange, options, placeholder, style={} }) {
+  return (
+    <div style={{ position:'relative', width:'100%' }}>
+      <select
+        value={value}
+        onChange={onChange}
+        style={{
+          ...pill,
+          cursor:'pointer',
+          appearance:'none',
+          WebkitAppearance:'none',
+          MozAppearance:'none',
+          paddingRight:'32px',
+          textAlign:'left',
+          background:'none',
+          ...style,
+        }}
+      >
+        <option value="">{placeholder}</option>
+        {options.map(o => typeof o === 'string'
+          ? <option key={o} value={o}>{o}</option>
+          : <option key={o.value} value={o.value}>{o.label}</option>
+        )}
+      </select>
+      <div style={{ position:'absolute', right:'13px', top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}>
+        <svg width="8" height="5" viewBox="0 0 8 5"><path d="M0 0l4 5 4-5z" fill="#3A3020"/></svg>
+      </div>
+    </div>
+  )
 }
-
-// Wrapper for select to hide any native arrow on Windows browsers
-const selWrap = { position:'relative', width:'100%' }
-const selOverlay = { position:'absolute', right:'10px', top:'50%', transform:'translateY(-50%)', pointerEvents:'none', width:'8px', height:'5px' }
 
 const EMPTY = {
   name:'', place:'', date:'', emotion:'',
@@ -106,24 +119,13 @@ export default function Entry({ trinkets, onAdd, onRemove, onUpdate, onMap }) {
           </div>
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
-            <select style={pillSel} value={form.emotion} onChange={e=>set('emotion',e.target.value)}>
-              <option value="">Emotional tag ▾</option>
-              {EMOTIONS.map(e=><option key={e}>{e}</option>)}
-            </select>
-            <select style={pillSel} value={form.acquisition} onChange={e=>set('acquisition',e.target.value)}>
-              <option value="">How did you get it? ▾</option>
-              {ACQUISITIONS.map(a=><option key={a}>{a}</option>)}
-            </select>
+            <Sel value={form.emotion} onChange={e=>set('emotion',e.target.value)} placeholder="Emotional tag" options={EMOTIONS} />
+            <Sel value={form.acquisition} onChange={e=>set('acquisition',e.target.value)} placeholder="How did you get it?" options={ACQUISITIONS} />
           </div>
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
             <input style={pill} placeholder="Material" value={form.material} onChange={e=>set('material',e.target.value)} />
-            <select style={pillSel} value={form.material_type} onChange={e=>set('material_type',e.target.value)}>
-              <option value="">Handmade or industrial? ▾</option>
-              <option value="craft">handmade / craft</option>
-              <option value="industrial">industrial</option>
-              <option value="self-made">made by me</option>
-            </select>
+            <Sel value={form.material_type} onChange={e=>set('material_type',e.target.value)} placeholder="Handmade or industrial?" options={[{value:'craft',label:'handmade / craft'},{value:'industrial',label:'industrial'},{value:'self-made',label:'made by me'}]} />
           </div>
 
           <input style={pill} placeholder="Note — why does this object matter?" value={form.note} onChange={e=>set('note',e.target.value)} />
