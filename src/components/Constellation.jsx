@@ -24,11 +24,27 @@ const LINE_STYLES = {
   inferred:    { w:1,   dash:'3 5',        op:0.6 },
 }
 
-function spreadNodes(rawPos, minDist, iters=80) {
+function spreadNodes(rawPos, minDist, cx, cy, youR, iters=120) {
   const pos = Object.fromEntries(Object.entries(rawPos).map(([k,v])=>[k,{x:v.x,y:v.y}]))
   const ids = Object.keys(pos)
+  const minFromCentre = youR + minDist * 0.6 // keep away from You node
+
   for(let it=0;it<iters;it++) {
     let moved = false
+
+    // Push away from centre (You node)
+    for(const id of ids) {
+      const p = pos[id]
+      const dx = p.x - cx, dy = p.y - cy
+      const dist = Math.sqrt(dx*dx+dy*dy) || 1
+      if (dist < minFromCentre) {
+        const push = minFromCentre - dist
+        pos[id] = { x: p.x + (dx/dist)*push, y: p.y + (dy/dist)*push }
+        moved = true
+      }
+    }
+
+    // Push away from each other
     for(let i=0;i<ids.length;i++) for(let j=i+1;j<ids.length;j++) {
       const a=pos[ids[i]],b=pos[ids[j]]
       const dx=b.x-a.x,dy=b.y-a.y,dist=Math.sqrt(dx*dx+dy*dy)
@@ -123,14 +139,14 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
     })
     .catch(() => {})
     .finally(() => setAiLoading(false))
-  }, [trinkets.length])
+  }, [JSON.stringify(trinkets.map(t=>t.id).sort())])
 
   // Orbital drift — runs continuously
   useEffect(() => {
     const start = performance.now()
     const tick = (now) => {
       const elapsed = (now - start) / 1000
-      setOrbitAngle(elapsed * (2 * Math.PI / 40)) // 40s per orbit
+      setOrbitAngle(elapsed * (2 * Math.PI / 25)) // 40s per orbit
       orbitRef.current = requestAnimationFrame(tick)
     }
     orbitRef.current = requestAnimationFrame(tick)
@@ -198,7 +214,7 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
   const nodeRadius = (id, name) => {
     const words = (name||'').split(' ')
     const maxLen = Math.max(...words.map(w=>w.length))
-    return Math.max(isMobile?14:18, Math.min(maxLen*(isMobile?4:5.2)+8, isMobile?36:44))
+    return Math.max(isMobile?16:22, Math.min(maxLen*(isMobile?4.5:5.8)+10, isMobile?40:50))
   }
 
   const minDist = useMemo(() => {
@@ -207,7 +223,8 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
     return maxR * 2 + 16
   }, [trinkets])
 
-  const finalPos = useMemo(() => spreadNodes(rawPos, minDist), [rawPos, minDist])
+  const youR = isMobile ? 26 : 32
+  const finalPos = useMemo(() => spreadNodes(rawPos, minDist, cx, cy, youR), [rawPos, minDist, cx, cy, youR])
 
   // Get position during entry animation
   const getAnimPos = (id, fp) => {
@@ -251,14 +268,14 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
           {/* Toggles */}
           <div style={{ display:'flex', gap:'8px', marginBottom:'4px', flexWrap:'wrap', justifyContent:'center' }}>
             {[{k:'known',v:showKnown,s:setShowKnown},{k:'inferred',v:showInferred,s:setShowInferred}].map(t=>(
-              <button key={t.k} onClick={()=>t.s(v=>!v)} style={{ padding:'4px 14px', borderRadius:'99px', border:`0.5px solid ${t.v?'#E8E0D0':'#3A3A3A'}`, background:'none', color:t.v?'#E8E0D0':'#686860', fontFamily:'Inconsolata,monospace', fontSize:'10px', letterSpacing:'0.06em', cursor:'pointer' }}>{t.k}</button>
+              <button key={t.k} onClick={()=>t.s(v=>!v)} style={{ padding:'4px 14px', borderRadius:'99px', border:`0.5px solid ${t.v?'#E8E0D0':'#3A3A3A'}`, background:'none', color:t.v?'#E8E0D0':'#686860', fontFamily:'Inconsolata,monospace', fontSize:'11px', letterSpacing:'0.06em', cursor:'pointer' }}>{t.k}</button>
             ))}
             <button onClick={()=>{ setView('analysis'); setAxesAnimated(false); setTimeout(()=>setAxesAnimated(true),200) }} style={{ padding:'4px 14px', borderRadius:'99px', border:'0.5px solid #3A3A3A', background:'none', color:'#686860', fontFamily:'Inconsolata,monospace', fontSize:'10px', letterSpacing:'0.06em', cursor:'pointer' }}>analysis →</button>
           </div>
 
           {/* AI status */}
-          {aiLoading && <p style={{ fontFamily:'Inconsolata,monospace', fontSize:'10px', color:'#686858', fontStyle:'italic', marginBottom:'3px' }}>finding connections…</p>}
-          {!aiLoading && aiConns.length > 0 && <p style={{ fontFamily:'Inconsolata,monospace', fontSize:'10px', color:'#5A8050', marginBottom:'3px' }}>{aiConns.length} AI connections found</p>}
+          {aiLoading && <p style={{ fontFamily:'Inconsolata,monospace', fontSize:'11px', color:'#888870', fontStyle:'italic', marginBottom:'3px' }}>finding connections…</p>}
+          {!aiLoading && aiConns.length > 0 && <p style={{ fontFamily:'Inconsolata,monospace', fontSize:'11px', color:'#6A9060', marginBottom:'3px' }}>{aiConns.length} AI connections found</p>}
 
           {/* Map SVG */}
           {trinkets.length >= 3 ? (
@@ -271,9 +288,9 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
                 const r = MAX_R - t * (MAX_R - MIN_R)
                 return (
                   <g key={year}>
-                    <circle cx={cx} cy={cy} r={Math.round(r)} fill="none" stroke="#383830" strokeWidth="1" strokeDasharray="2 6" />
+                    <circle cx={cx} cy={cy} r={Math.round(r)} fill="none" stroke="#585850" strokeWidth="1.5" strokeDasharray="2 5" />
                     {(yi===0||yi===sortedYears.length-1) && (
-                      <text x={Math.min(cx+Math.round(r)+8, W-50)} y={cy} fontSize="11" fill="#686860" fontFamily="Inconsolata,monospace" dominantBaseline="central" fontStyle="italic" fontWeight="500">
+                      <text x={Math.min(cx+Math.round(r)+8, W-50)} y={cy} fontSize="13" fill="#A0A090" fontFamily="Inconsolata,monospace" dominantBaseline="central" fontStyle="italic" fontWeight="600">
                         {yi===0?`oldest · ${year}`:`newest · ${year}`}
                       </text>
                     )}
@@ -324,7 +341,7 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
 
               {/* You node */}
               <circle cx={cx} cy={cy} r={isMobile?26:32} fill="#E8E0D0" />
-              <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={isMobile?10:13} fill="#1A1A1A" fontFamily="Inconsolata,monospace" fontWeight="600">You</text>
+              <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={isMobile?11:15} fill="#1A1A1A" fontFamily="Inconsolata,monospace" fontWeight="700">You</text>
 
               {/* Trinket nodes */}
               {trinkets.map((t, idx) => {
@@ -372,9 +389,9 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
                     )}
                     <circle cx={p.x} cy={p.y} r={nr} fill={fill} stroke="#C8C4BC" strokeWidth={sw} opacity={dimmed?0.2:1} style={{ transition:'opacity 0.3s ease' }} />
                     {lines.map((ln,li) => (
-                      <text key={li} x={p.x} y={startY+li*lh} textAnchor="middle" dominantBaseline="central" fontSize={isMobile?8:10} fill={tc} fontFamily="Inconsolata,monospace" fontWeight="500" opacity={dimmed?0.2:1}>{ln}</text>
+                      <text key={li} x={p.x} y={startY+li*lh} textAnchor="middle" dominantBaseline="central" fontSize={isMobile?9:12} fill={tc} fontFamily="Inconsolata,monospace" fontWeight="600" opacity={dimmed?0.2:1}>{ln}</text>
                     ))}
-                    {t.date && <text x={lx} y={ly} textAnchor="middle" fontSize={isMobile?8:10} fill="#909088" fontFamily="Inconsolata,monospace" opacity={dimmed?0.1:1}>{t.date}</text>}
+                    {t.date && <text x={lx} y={ly} textAnchor="middle" fontSize={isMobile?9:11} fill="#A0A090" fontFamily="Inconsolata,monospace" opacity={dimmed?0.1:1}>{t.date}</text>}
                   </g>
                 )
               })}
@@ -395,17 +412,17 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
                 return (
                   <div key={type} style={{ display:'flex', alignItems:'center', gap:'5px' }}>
                     <svg width="22" height="10"><line x1="0" y1="5" x2="22" y2="5" stroke="#E8E0D0" strokeWidth={s.w} strokeDasharray={s.dash} opacity={s.op} /></svg>
-                    <span style={{ fontFamily:'Inconsolata,monospace', fontSize:'10px', color:'#A0A090' }}>{type}</span>
+                    <span style={{ fontFamily:'Inconsolata,monospace', fontSize:'11px', color:'#B0B0A0' }}>{type}</span>
                   </div>
                 )
               })}
-              <span style={{ fontFamily:'Inconsolata,monospace', fontSize:'10px', color:'#686860' }}>outer = oldest · inner = newest</span>
+              <span style={{ fontFamily:'Inconsolata,monospace', fontSize:'11px', color:'#888878' }}>outer = oldest · inner = newest</span>
             </div>
           )}
 
           {/* First-use tip */}
           {showTip && activeConns.length > 0 && (
-            <p style={{ fontFamily:'Inconsolata,monospace', fontSize:'10px', color:'#686860', fontStyle:'italic', marginTop:'4px' }}>
+            <p style={{ fontFamily:'Inconsolata,monospace', fontSize:'11px', color:'#888878', fontStyle:'italic', marginTop:'4px' }}>
               tap a connection line to see what links these objects
             </p>
           )}
@@ -416,9 +433,9 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
             const b = trinkets.find(t=>t.id===selectedConn.ids[1])
             return (
               <div style={{ position:'absolute', bottom:'72px', background:'#141414', border:'0.5px solid #3A3A3A', borderRadius:'6px', padding:'12px 16px', maxWidth:'400px', textAlign:'center', maxHeight:'200px', overflowY:'auto', animation:'fadeUp 0.2s ease forwards', zIndex:10 }}>
-                <div style={{ fontSize:'12px', color:'#E8E0D0', fontFamily:'Inconsolata,monospace', marginBottom:'5px', fontWeight:500 }}>{a?.name} × {b?.name}</div>
-                <div style={{ fontSize:'10px', color:'#A89880', fontFamily:'Inconsolata,monospace', marginBottom:'5px', fontStyle:'italic' }}>{selectedConn.label}</div>
-                {selectedConn.detail && <div style={{ fontSize:'10px', color:'#909088', fontFamily:'Inconsolata,monospace', lineHeight:1.75 }}>{selectedConn.detail}</div>}
+                <div style={{ fontSize:'13px', color:'#E8E0D0', fontFamily:'Inconsolata,monospace', marginBottom:'5px', fontWeight:500 }}>{a?.name} × {b?.name}</div>
+                <div style={{ fontSize:'11px', color:'#A89880', fontFamily:'Inconsolata,monospace', marginBottom:'5px', fontStyle:'italic' }}>{selectedConn.label}</div>
+                {selectedConn.detail && <div style={{ fontSize:'11px', color:'#909088', fontFamily:'Inconsolata,monospace', lineHeight:1.75 }}>{selectedConn.detail}</div>}
                 <button onClick={()=>setSelectedConn(null)} style={{ marginTop:'8px', background:'none', border:'none', color:'#555', fontSize:'10px', cursor:'pointer', fontFamily:'Inconsolata,monospace' }}>dismiss</button>
               </div>
             )
