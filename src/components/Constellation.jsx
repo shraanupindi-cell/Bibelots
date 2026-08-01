@@ -131,13 +131,13 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
   const getDriftedPos = (id, finalPos, idx) => {
     if (!finalPos) return finalPos
     const progress = nodeProgress[id] ?? 0
-    if (progress < 1) return finalPos // don't drift during entry animation
-    // Small slow circular drift — radius 3px, each node at different phase
+    if (progress < 1) return finalPos
+    // Slow circular drift — 12px radius, each node different phase
     const phase = (idx / Math.max(trinkets.length, 1)) * 2 * Math.PI
-    const driftR = 6
+    const driftR = 12
     return {
-      x: Math.round(finalPos.x + Math.cos(orbitOffset + phase) * driftR),
-      y: Math.round(finalPos.y + Math.sin(orbitOffset + phase) * driftR),
+      x: finalPos.x + Math.cos(orbitOffset + phase) * driftR,
+      y: finalPos.y + Math.sin(orbitOffset + phase) * driftR,
     }
   }
 
@@ -310,7 +310,7 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
                       strokeWidth="0.5"
                       opacity={Math.max(0, 0.4 - (rippleRadius - nr) / 40 * 0.4)} />
                   )}
-                  <circle cx={p.x} cy={p.y} r={nr} fill={fill} stroke="#E8E0D0" strokeWidth={sw} opacity={dimmed?0.2:1}
+                  <circle cx={Math.round(p.x)} cy={Math.round(p.y)} r={nr} fill={fill} stroke="#E8E0D0" strokeWidth={sw} opacity={dimmed?0.2:1}
                     style={{ transition: 'opacity 0.3s ease' }} />
                   {lines.map((ln,li)=>(
                     <text key={li} x={p.x} y={startY+li*lh} textAnchor="middle" dominantBaseline="central" fontSize={isMobile?8:10} fill={tc} fontFamily="Inconsolata,monospace" fontWeight="500" opacity={dimmed?0.2:1}>{ln}</text>
