@@ -84,15 +84,15 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
   // Axes animation
   useEffect(()=>{setTimeout(()=>setAxesAnimated(true),300)},[view])
 
-  // Gemini AI connections — called directly from browser
+  // Groq AI connections — free, no billing required
   useEffect(()=>{
     if(trinkets.length<2) return
     const cacheKey='bib_ai_'+[...trinkets.map(t=>String(t.id))].sort().join('_')
     const cached=sessionStorage.getItem(cacheKey)
     if(cached){try{setAiConns(JSON.parse(cached));return}catch(e){}}
 
-    const apiKey=process.env.REACT_APP_GEMINI_KEY
-    if(!apiKey){console.warn('REACT_APP_GEMINI_KEY not set');return}
+    const apiKey=process.env.REACT_APP_GROQ_KEY
+    if(!apiKey){console.warn('REACT_APP_GROQ_KEY not set');return}
 
     setAiLoading(true)
 
@@ -112,41 +112,43 @@ ${list}
 
 Find 4-6 interesting connections between pairs. Connections can be historical, geographic, material, cultural, personal, conceptual, or economic.
 
-Return ONLY valid JSON, absolutely no markdown or extra text:
+Return ONLY valid JSON, no markdown, no extra text:
 {"connections":[{"object1":"exact name","object2":"exact name","type":"cultural","label":"4-6 word label","detail":"2 sentences with specific facts."}]}`
 
-    const models=['gemini-2.0-flash','gemini-1.5-flash','gemini-1.0-pro']
-
-    const tryModel=(idx)=>{
-      if(idx>=models.length){setAiLoading(false);return}
-      fetch(`https://generativelanguage.googleapis.com/v1beta/models/${models[idx]}:generateContent`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-goog-api-key':apiKey},
-        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:1200}})
+    fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[
+          {role:'system',content:'You are an expert in material culture and history. Always respond with valid JSON only, no markdown.'},
+          {role:'user',content:prompt}
+        ],
+        temperature:0.7,
+        max_tokens:1200,
       })
-      .then(r=>r.json())
-      .then(data=>{
-        if(data.error){console.warn(`Model ${models[idx]} failed:`,data.error.message);tryModel(idx+1);return}
-        const text=data?.candidates?.[0]?.content?.parts?.[0]?.text||''
-        const match=text.match(/\{[\s\S]*\}/)
-        if(!match){tryModel(idx+1);return}
-        const parsed=JSON.parse(match[0])
-        if(!parsed.connections){tryModel(idx+1);return}
-        const mapped=parsed.connections.map(c=>{
-          const n1=(c.object1||'').toLowerCase()
-          const n2=(c.object2||'').toLowerCase()
-          const a=trinkets.find(t=>t.name.toLowerCase()===n1||n1.includes(t.name.toLowerCase().split(' ')[0]))
-          const b=trinkets.find(t=>t.name.toLowerCase()===n2||n2.includes(t.name.toLowerCase().split(' ')[0]))
-          if(!a||!b||a.id===b.id) return null
-          return{ids:[a.id,b.id],type:c.type||'cultural',label:c.label,detail:c.detail,inferred:true,ai:true}
-        }).filter(Boolean)
-        setAiConns(mapped)
-        sessionStorage.setItem(cacheKey,JSON.stringify(mapped))
-        setAiLoading(false)
-      })
-      .catch(()=>tryModel(idx+1))
-    }
-    tryModel(0)
+    })
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.error){console.warn('Groq error:',data.error.message);setAiLoading(false);return}
+      const text=data?.choices?.[0]?.message?.content||''
+      const match=text.match(/\{[\s\S]*\}/)
+      if(!match){console.warn('No JSON found');setAiLoading(false);return}
+      const parsed=JSON.parse(match[0])
+      if(!parsed.connections){setAiLoading(false);return}
+      const mapped=parsed.connections.map(c=>{
+        const n1=(c.object1||'').toLowerCase()
+        const n2=(c.object2||'').toLowerCase()
+        const a=trinkets.find(t=>t.name.toLowerCase()===n1||n1.includes(t.name.toLowerCase().split(' ')[0]))
+        const b=trinkets.find(t=>t.name.toLowerCase()===n2||n2.includes(t.name.toLowerCase().split(' ')[0]))
+        if(!a||!b||a.id===b.id) return null
+        return{ids:[a.id,b.id],type:c.type||'cultural',label:c.label,detail:c.detail,inferred:true,ai:true}
+      }).filter(Boolean)
+      setAiConns(mapped)
+      sessionStorage.setItem(cacheKey,JSON.stringify(mapped))
+      setAiLoading(false)
+    })
+    .catch(err=>{console.warn('Groq error:',err.message);setAiLoading(false)})
   },[trinkets.length])
 
   // Orbital drift
