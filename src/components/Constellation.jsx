@@ -153,18 +153,18 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
     return () => cancelAnimationFrame(orbitRef.current)
   }, [])
 
-  // Node entry animation
+  // Node entry animation — runs on mount and when trinkets change
   useEffect(() => {
-    if (view !== 'map') return
     setVisibleNodes([])
     setVisibleConns([])
     setNodeProgress({})
     const timers = []
+    // Show all nodes immediately with animation
     trinkets.forEach((t, i) => {
       timers.push(setTimeout(() => {
         setVisibleNodes(v => [...v, i])
         const start = performance.now()
-        const dur = 2400
+        const dur = 1800
         const anim = (now) => {
           const p = Math.min((now - start) / dur, 1)
           const eased = 1 - Math.pow(1-p, 3)
@@ -172,14 +172,16 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
           if (p < 1) requestAnimationFrame(anim)
         }
         requestAnimationFrame(anim)
-      }, i * 350))
+      }, i * 250))
     })
-    const connDelay = trinkets.length * 350 + 2800
-    activeConns.forEach((_, i) => {
-      timers.push(setTimeout(() => setVisibleConns(v => [...v, i]), connDelay + i * 120))
-    })
+    // Show all connections after nodes settle
+    const connDelay = trinkets.length * 250 + 1800
+    const totalConns = findKnownConnections(trinkets).length + findInferredConnections(trinkets).length
+    for (let i = 0; i < totalConns + 20; i++) {
+      timers.push(setTimeout(() => setVisibleConns(v => [...v, i]), connDelay + i * 100))
+    }
     return () => timers.forEach(clearTimeout)
-  }, [view, showKnown, showInferred])
+  }, [trinkets.length])
 
   const isMobile = window.innerWidth < 600
   const W = isMobile ? 380 : 700

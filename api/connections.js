@@ -21,43 +21,66 @@ export default async function handler(req, res) {
 Here is someone's personal collection of objects:
 ${list}
 
-Find 4-6 interesting connections between pairs of these objects. Connections can be historical, geographic, material, cultural, personal, conceptual, or economic — anything meaningful and non-obvious.
+Find 4-6 interesting connections between pairs of these objects. Connections can be historical, geographic, material, cultural, personal, conceptual, or economic.
 
-Return ONLY valid JSON with no markdown:
-{"connections":[{"object1":"name","object2":"name","type":"historical","label":"short label","detail":"2 sentences explaining the connection"}]}`
+IMPORTANT: Return ONLY a JSON object. No markdown. No explanation. No text before or after. Just the JSON.
 
-  try {
-    const resp = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-goog-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
-        })
+Example format:
+{"connections":[{"object1":"coin","object2":"tile","type":"historical","label":"both pre-colonial","detail":"Both objects originate from periods before British colonisation of India, representing continuity of craft traditions across political upheaval."}]}`
+
+  // Try models in order until one works
+  const models = [
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-1.0-pro',
+  ]
+
+  for (const model of models) {
+    try {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-goog-api-key': apiKey,
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
+          })
+        }
+      )
+
+      const data = await resp.json()
+
+      if (!resp.ok) {
+        console.error(`Model ${model} failed:`, resp.status, data?.error?.message)
+        continue // try next model
       }
-    )
 
-    const data = await resp.json()
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+      if (!text) {
+        console.error(`Model ${model} returned no text`)
+        continue
+      }
 
-    if (!resp.ok) {
-      console.error('Gemini error:', resp.status, JSON.stringify(data))
-      return res.status(500).json({ error: `Gemini ${resp.status}`, detail: data?.error?.message })
+      // Extract JSON from response — handles markdown fences and extra text
+      const jsonMatch = text.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) {
+        console.error(`No JSON found in response:`, text.substring(0, 200))
+        continue
+      }
+
+      const parsed = JSON.parse(jsonMatch[0])
+      console.log(`Success with model ${model}, found ${parsed.connections?.length} connections`)
+      return res.status(200).json(parsed)
+
+    } catch (err) {
+      console.error(`Model ${model} threw:`, err.message)
+      continue
     }
-
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
-    if (!text) return res.status(500).json({ error: 'No text in response', raw: JSON.stringify(data) })
-
-    const clean = text.replace(/```json|```/g, '').trim()
-    const parsed = JSON.parse(clean)
-    return res.status(200).json(parsed)
-
-  } catch (err) {
-    console.error('Error:', err.message)
-    return res.status(500).json({ error: err.message })
   }
+
+  return res.status(500).json({ error: 'All models failed' })
 }
