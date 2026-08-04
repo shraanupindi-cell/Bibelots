@@ -209,11 +209,19 @@ Return ONLY valid JSON, no markdown, no extra text:
     return p
   },[trinkets,trinketYears,minYear,maxYear])
 
-  const nodeR=(name)=>{
+  const nodeR=(name, id)=>{
+    // Base size from text
     const maxLen=Math.max(...(name||'').split(' ').map(w=>w.length))
-    return Math.max(isMobile?16:22,Math.min(maxLen*(isMobile?4.5:5.8)+10,isMobile?40:50))
+    const textBase=Math.max(isMobile?14:18,Math.min(maxLen*(isMobile?4:5)+8,isMobile?36:46))
+    // Distance bonus — further from centre = bigger
+    const fp=finalPos[id]
+    if(!fp) return textBase
+    const dist=Math.sqrt((fp.x-cx)**2+(fp.y-cy)**2)
+    const distT=Math.min(dist/MAX_R,1)
+    const distBonus=distT*(isMobile?8:14)
+    return Math.round(textBase+distBonus)
   }
-  const minDist=useMemo(()=>(trinkets.length?Math.max(...trinkets.map(t=>nodeR(t.name)))*2+16:50),[trinkets])
+  const minDist=useMemo(()=>(trinkets.length?Math.max(...trinkets.map(t=>nodeR(t.name,t.id)))*2+16:50),[trinkets])
   const finalPos=useMemo(()=>spreadNodes(rawPos,minDist,cx,cy,youR),[rawPos,minDist,cx,cy,youR])
 
   const getAnimPos=(id,fp)=>{
@@ -225,8 +233,18 @@ Return ONLY valid JSON, no markdown, no extra text:
   }
   const getDriftPos=(id,ap,idx)=>{
     if(!ap||(nodeProgress[id]??0)<1) return ap
+    const fp=finalPos[id]; if(!fp) return ap
+    // Each node orbits at its own speed — further nodes orbit slower (Kepler's 3rd law)
+    const dist=Math.sqrt((fp.x-cx)**2+(fp.y-cy)**2)||1
+    const orbitSpeed=1-(dist/MAX_R)*0.5 // inner nodes faster, outer slower
     const phase=(idx/Math.max(trinkets.length,1))*2*Math.PI
-    return{x:ap.x+Math.cos(orbitAngle+phase)*10,y:ap.y+Math.sin(orbitAngle+phase)*10}
+    const angle=Math.atan2(fp.y-cy,fp.x-cx)
+    const r=dist
+    const currentAngle=angle+orbitAngle*orbitSpeed*0.15+phase*0.1
+    return{
+      x:cx+r*Math.cos(currentAngle),
+      y:cy+r*Math.sin(currentAngle),
+    }
   }
 
   const hoveredConnIds=useMemo(()=>hoveredNode?new Set(activeConns.filter(c=>c.ids.includes(hoveredNode)).flatMap(c=>c.ids)):new Set(),[hoveredNode,activeConns])
@@ -285,7 +303,7 @@ Return ONLY valid JSON, no markdown, no extra text:
                 const fp=finalPos[t.id];if(!fp) return null
                 const p=getDriftPos(t.id,getAnimPos(t.id,fp),i)
                 const dx=p.x-cx,dy=p.y-cy,d=Math.sqrt(dx*dx+dy*dy)||1
-                const nr=nodeR(t.name)
+                const nr=nodeR(t.name,t.id)
                 return <line key={t.id} x1={cx+(dx/d)*34} y1={cy+(dy/d)*34} x2={p.x-(dx/d)*nr} y2={p.y-(dy/d)*nr} stroke="#2A2A28" strokeWidth="0.8"/>
               })}
 
@@ -324,7 +342,7 @@ Return ONLY valid JSON, no markdown, no extra text:
                 if(!visibleNodes.includes(idx)) return null
                 const fp=finalPos[t.id];if(!fp) return null
                 const p=getDriftPos(t.id,getAnimPos(t.id,fp),idx)
-                const nr=nodeR(t.name)
+                const nr=nodeR(t.name,t.id)
                 const fill=getNodeFill(idx)
                 const tc=getTextFill(fill)
                 const dimmed=hoveredNode&&hoveredNode!==t.id&&!hoveredConnIds.has(t.id)
@@ -395,7 +413,7 @@ Return ONLY valid JSON, no markdown, no extra text:
                 <div style={{fontSize:'13px',color:'#E8E0D0',fontFamily:'Inconsolata,monospace',marginBottom:'5px',fontWeight:500}}>{a?.name} × {b?.name}</div>
                 <div style={{fontSize:'11px',color:'#A89880',fontFamily:'Inconsolata,monospace',marginBottom:'5px',fontStyle:'italic'}}>{selectedConn.label}</div>
                 {selectedConn.detail&&<div style={{fontSize:'11px',color:'#909088',fontFamily:'Inconsolata,monospace',lineHeight:1.75}}>{selectedConn.detail}</div>}
-                <button onClick={()=>setSelectedConn(null)} style={{marginTop:'8px',background:'none',border:'none',color:'#555',fontSize:'11px',cursor:'pointer',fontFamily:'Inconsolata,monospace'}}>dismiss</button>
+                <button onClick={()=>setSelectedConn(null)} style={{marginTop:'10px',background:'none',border:'0.5px solid #555',borderRadius:'99px',padding:'5px 16px',color:'#A0A090',fontSize:'11px',cursor:'pointer',fontFamily:'Inconsolata,monospace'}}>dismiss</button>
               </div>
             )
           })()}
@@ -403,7 +421,7 @@ Return ONLY valid JSON, no markdown, no extra text:
           {/* Bottom buttons */}
           {trinkets.length>=3&&(
             <div style={{display:'flex',gap:'10px',alignItems:'center',marginTop:'10px',flexWrap:'wrap',justifyContent:'center'}}>
-              <button onClick={onBack} style={{padding:'9px 20px',borderRadius:'99px',border:'0.5px solid #686858',background:'none',color:'#A0A090',fontFamily:'Inconsolata,monospace',fontSize:'11px',cursor:'pointer',letterSpacing:'0.06em',transition:'all 0.2s'}}
+              <button onClick={onBack} style={{padding:'10px 24px',borderRadius:'99px',border:'1px solid #A0A090',background:'rgba(232,224,208,0.08)',color:'#C8C4BC',fontFamily:'Inconsolata,monospace',fontSize:'12px',cursor:'pointer',letterSpacing:'0.06em',transition:'all 0.2s'}}
                 onMouseEnter={e=>{e.currentTarget.style.color='#E8E0D0';e.currentTarget.style.borderColor='#E8E0D0'}}
                 onMouseLeave={e=>{e.currentTarget.style.color='#A0A090';e.currentTarget.style.borderColor='#686858'}}>
                 ← add more objects
