@@ -22,6 +22,7 @@ const LS = {
   conceptual:  {w:1.5, dash:'3 2 1 2',   op:0.8},
   economic:    {w:2,   dash:'5 2',        op:0.8},
   inferred:    {w:1,   dash:'3 5',        op:0.6},
+  AI:          {w:2,   dash:'8 3',        op:0.95},
 }
 
 function spreadNodes(rawPos, minDist, cx, cy, youR, iters=120) {
@@ -64,16 +65,19 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
   const knownConns = useMemo(()=>findKnownConnections(trinkets),[trinkets])
   const inferredConns = useMemo(()=>findInferredConnections(trinkets),[trinkets])
 
-  // activeConns: known = solid data connections, inferred = inferred + AI
+  // activeConns: AI connections take priority over hardcoded inferred
   const activeConns = useMemo(()=>{
     const result = []
     if(showKnown) result.push(...knownConns)
     if(showInferred){
-      result.push(...inferredConns)
-      const seen = new Set(result.map(c=>`${Math.min(...c.ids)}-${Math.max(...c.ids)}`))
-      aiConns.forEach(c=>{
+      // Add AI connections first
+      result.push(...aiConns)
+      const aiSeen = new Set(aiConns.map(c=>`${Math.min(...c.ids)}-${Math.max(...c.ids)}`))
+      const knownSeen = new Set(knownConns.map(c=>`${Math.min(...c.ids)}-${Math.max(...c.ids)}`))
+      // Only add hardcoded inferred if AI hasn't covered that pair
+      inferredConns.forEach(c=>{
         const k=`${Math.min(...c.ids)}-${Math.max(...c.ids)}`
-        if(!seen.has(k)) result.push(c)
+        if(!aiSeen.has(k) && !knownSeen.has(k)) result.push(c)
       })
     }
     return result
@@ -227,7 +231,7 @@ Return ONLY valid JSON, no markdown, no extra text:
 
   const hoveredConnIds=useMemo(()=>hoveredNode?new Set(activeConns.filter(c=>c.ids.includes(hoveredNode)).flatMap(c=>c.ids)):new Set(),[hoveredNode,activeConns])
   const sortedYears=useMemo(()=>[...new Set(trinketYears)].sort((a,b)=>a-b),[trinketYears])
-  const usedTypes=[...new Set(activeConns.map(c=>c.inferred?'inferred':c.type))]
+  const usedTypes=[...new Set(activeConns.map(c=>c.ai?'AI':c.inferred?'inferred':c.type))]
 
   return (
     <div style={{position:'fixed',inset:0,background:'#1E1E1E'}}>
@@ -301,11 +305,11 @@ Return ONLY valid JSON, no markdown, no extra text:
                   <g key={i} onClick={()=>{setSelectedConn(isSel?null:c);if(showTip){setShowTip(false);localStorage.setItem('bib_tip','1')}}} style={{cursor:'pointer'}}>
                     <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth={12}/>
                     <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
-                      stroke={isSel?'#FFFFFF':'#E8E0D0'}
-                      strokeWidth={isSel?s.w+1:s.w}
-                      strokeDasharray={c.inferred?'5 3':s.dash}
-                      strokeDashoffset={c.inferred?-orbitAngle*18:0}
-                      opacity={dimmed?0.1:isSel?1:s.op}
+                      stroke={isSel?'#FFFFFF':c.ai?'#C8D8C0':'#E8E0D0'}
+                      strokeWidth={isSel?s.w+1:c.ai?2:s.w}
+                      strokeDasharray={c.ai?'8 3':c.inferred?'5 3':s.dash}
+                      strokeDashoffset={c.inferred||c.ai?-orbitAngle*18:0}
+                      opacity={dimmed?0.1:isSel?1:c.ai?0.95:s.op}
                       style={{transition:'opacity 0.3s ease'}}/>
                   </g>
                 )
