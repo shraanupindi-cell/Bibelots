@@ -213,10 +213,10 @@ Return ONLY valid JSON, no markdown, no extra text:
     // Base size from text
     const maxLen=Math.max(...(name||'').split(' ').map(w=>w.length))
     const textBase=Math.max(isMobile?14:18,Math.min(maxLen*(isMobile?4:5)+8,isMobile?36:46))
-    // Distance bonus — further from centre = bigger
-    const fp=finalPos[id]
-    if(!fp) return textBase
-    const dist=Math.sqrt((fp.x-cx)**2+(fp.y-cy)**2)
+    // Distance bonus using rawPos (no circular dep with finalPos)
+    const rp=rawPos[id]
+    if(!rp) return textBase
+    const dist=Math.sqrt((rp.x-cx)**2+(rp.y-cy)**2)
     const distT=Math.min(dist/MAX_R,1)
     const distBonus=distT*(isMobile?8:14)
     return Math.round(textBase+distBonus)
@@ -233,17 +233,12 @@ Return ONLY valid JSON, no markdown, no extra text:
   }
   const getDriftPos=(id,ap,idx)=>{
     if(!ap||(nodeProgress[id]??0)<1) return ap
-    const fp=finalPos[id]; if(!fp) return ap
-    // Each node orbits at its own speed — further nodes orbit slower (Kepler's 3rd law)
-    const dist=Math.sqrt((fp.x-cx)**2+(fp.y-cy)**2)||1
-    const orbitSpeed=1-(dist/MAX_R)*0.5 // inner nodes faster, outer slower
+    // Small circular drift around settled position — no circular dependency
     const phase=(idx/Math.max(trinkets.length,1))*2*Math.PI
-    const angle=Math.atan2(fp.y-cy,fp.x-cx)
-    const r=dist
-    const currentAngle=angle+orbitAngle*orbitSpeed*0.15+phase*0.1
+    const driftR=10
     return{
-      x:cx+r*Math.cos(currentAngle),
-      y:cy+r*Math.sin(currentAngle),
+      x:ap.x+Math.cos(orbitAngle+phase)*driftR,
+      y:ap.y+Math.sin(orbitAngle+phase)*driftR,
     }
   }
 
