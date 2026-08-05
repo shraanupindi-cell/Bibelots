@@ -241,19 +241,13 @@ Return ONLY valid JSON, no markdown, no extra text:
   }
   const getDriftPos=(id,ap,idx)=>{
     if(!ap||(nodeProgress[id]??0)<1) return ap
-    const rp=rawPos[id]; if(!rp) return ap
-    const dist=Math.sqrt((rp.x-cx)**2+(rp.y-cy)**2)||1
-    // Each node has a fixed angular offset = golden angle * idx
-    // This guarantees they never bunch up — golden angle spacing is maximally spread
-    const goldenAngle=2.399963
-    const fixedOffset=idx*goldenAngle
-    // Speed varies slightly by index so they drift apart over time, never sync
-    const speed=0.04+idx*0.003
-    const originalAngle=Math.atan2(rp.y-cy,rp.x-cx)
-    const currentAngle=originalAngle+fixedOffset+orbitAngle*speed
+    // Each node drifts in a tiny circle around its own settled position
+    // Phase offset by golden angle per node — they never sync
+    const phase=idx*2.399963
+    const driftR=5
     return{
-      x:cx+dist*Math.cos(currentAngle),
-      y:cy+dist*Math.sin(currentAngle),
+      x:ap.x+Math.cos(orbitAngle+phase)*driftR,
+      y:ap.y+Math.sin(orbitAngle+phase)*driftR,
     }
   }
 
@@ -315,7 +309,7 @@ Return ONLY valid JSON, no markdown, no extra text:
                 const dx=p.x-cx,dy=p.y-cy,d=Math.sqrt(dx*dx+dy*dy)||1
                 const nr=nodeR(t.name,t.id)
                 const youR2=isMobile?26:32
-                return <line key={t.id} x1={cx+(dx/d)*youR2} y1={cy+(dy/d)*youR2} x2={p.x-(dx/d)*nr} y2={p.y-(dy/d)*nr} stroke="#2A2A28" strokeWidth="0.8"/>
+                return <line key={t.id} x1={cx+(dx/d)*youR2} y1={cy+(dy/d)*youR2} x2={p.x-(dx/d)*nr} y2={p.y-(dy/d)*nr} stroke="#4A4A42" strokeWidth="1.2"/>
               })}
 
               {/* Connections */}
