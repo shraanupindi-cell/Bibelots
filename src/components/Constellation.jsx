@@ -241,13 +241,16 @@ Return ONLY valid JSON, no markdown, no extra text:
   }
   const getDriftPos=(id,ap,idx)=>{
     if(!ap||(nodeProgress[id]??0)<1) return ap
-    // Revolve around You node — each node rotates at its own slow speed
     const rp=rawPos[id]; if(!rp) return ap
     const dist=Math.sqrt((rp.x-cx)**2+(rp.y-cy)**2)||1
-    // Slower orbit for outer nodes (Kepler), very slow overall
-    const speed=0.08*(1-(dist/MAX_R)*0.4)
+    // Each node has a fixed angular offset = golden angle * idx
+    // This guarantees they never bunch up — golden angle spacing is maximally spread
+    const goldenAngle=2.399963
+    const fixedOffset=idx*goldenAngle
+    // Speed varies slightly by index so they drift apart over time, never sync
+    const speed=0.04+idx*0.003
     const originalAngle=Math.atan2(rp.y-cy,rp.x-cx)
-    const currentAngle=originalAngle+orbitAngle*speed
+    const currentAngle=originalAngle+fixedOffset+orbitAngle*speed
     return{
       x:cx+dist*Math.cos(currentAngle),
       y:cy+dist*Math.sin(currentAngle),
@@ -440,7 +443,7 @@ Return ONLY valid JSON, no markdown, no extra text:
                 onMouseLeave={e=>{e.currentTarget.style.color='#A0A090';e.currentTarget.style.borderColor='#686858'}}>
                 ← add more objects
               </button>
-              <button onClick={onReveal} style={{padding:'10px 36px',borderRadius:'12px',border:'1px solid #E8E0D0',background:'none',color:'#E8E0D0',fontFamily:'JacquardaBastarda9,cursive',fontSize:'20px',cursor:'pointer',transition:'all 0.2s'}}
+              <button onClick={onReveal} style={{padding:'10px 36px',borderRadius:'99px',border:'1px solid #E8E0D0',background:'none',color:'#E8E0D0',fontFamily:'JacquardaBastarda9,cursive',fontSize:'20px',cursor:'pointer',transition:'all 0.2s'}}
                 onMouseEnter={e=>{e.currentTarget.style.background='#E8E0D0';e.currentTarget.style.color='#1E1E1E'}}
                 onMouseLeave={e=>{e.currentTarget.style.background='none';e.currentTarget.style.color='#E8E0D0'}}>
                 Reveal Archetype
