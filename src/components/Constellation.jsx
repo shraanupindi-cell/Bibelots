@@ -209,19 +209,27 @@ Return ONLY valid JSON, no markdown, no extra text:
     return p
   },[trinkets,trinketYears,minYear,maxYear])
 
+  // Precompute ring radii for size calculation (no circular dep)
+  const ringRadii = useMemo(()=>{
+    const range=maxYear-minYear||1
+    const m={}
+    trinkets.forEach((t,i)=>{
+      const yearT=(trinketYears[i]-minYear)/range
+      m[t.id]=MAX_R-yearT*(MAX_R-MIN_R) // bigger r = older = further out = bigger node
+    })
+    return m
+  },[trinkets,trinketYears,minYear,maxYear])
+
   const nodeR=(name, id)=>{
-    // Base size from text
     const maxLen=Math.max(...(name||'').split(' ').map(w=>w.length))
-    const textBase=Math.max(isMobile?14:18,Math.min(maxLen*(isMobile?4:5)+8,isMobile?36:46))
-    // Distance bonus using rawPos (no circular dep with finalPos)
-    const rp=rawPos[id]
-    if(!rp) return textBase
-    const dist=Math.sqrt((rp.x-cx)**2+(rp.y-cy)**2)
-    const distT=Math.min(dist/MAX_R,1)
-    const distBonus=distT*(isMobile?8:14)
+    const textBase=Math.max(isMobile?13:16,Math.min(maxLen*(isMobile?3.8:4.8)+7,isMobile?32:42))
+    // Older/further objects get bigger nodes
+    const r=ringRadii[id]||MIN_R
+    const distT=Math.min((r-MIN_R)/(MAX_R-MIN_R),1)
+    const distBonus=distT*(isMobile?10:18)
     return Math.round(textBase+distBonus)
   }
-  const minDist=useMemo(()=>(trinkets.length?Math.max(...trinkets.map(t=>nodeR(t.name,t.id)))*2+16:50),[trinkets])
+  const minDist=useMemo(()=>(trinkets.length?Math.max(...trinkets.map(t=>nodeR(t.name,t.id)))*2+20:50),[trinkets,ringRadii])
   const finalPos=useMemo(()=>spreadNodes(rawPos,minDist,cx,cy,youR),[rawPos,minDist,cx,cy,youR])
 
   const getAnimPos=(id,fp)=>{
@@ -303,7 +311,8 @@ Return ONLY valid JSON, no markdown, no extra text:
                 const p=getDriftPos(t.id,getAnimPos(t.id,fp),i)
                 const dx=p.x-cx,dy=p.y-cy,d=Math.sqrt(dx*dx+dy*dy)||1
                 const nr=nodeR(t.name,t.id)
-                return <line key={t.id} x1={cx+(dx/d)*34} y1={cy+(dy/d)*34} x2={p.x-(dx/d)*nr} y2={p.y-(dy/d)*nr} stroke="#2A2A28" strokeWidth="0.8"/>
+                const youR2=isMobile?26:32
+                return <line key={t.id} x1={cx+(dx/d)*youR2} y1={cy+(dy/d)*youR2} x2={p.x-(dx/d)*nr} y2={p.y-(dy/d)*nr} stroke="#2A2A28" strokeWidth="0.8"/>
               })}
 
               {/* Connections */}
@@ -312,8 +321,14 @@ Return ONLY valid JSON, no markdown, no extra text:
                 const fp1=finalPos[c.ids[0]],fp2=finalPos[c.ids[1]]
                 if(!fp1||!fp2) return null
                 const idx1=trinkets.findIndex(t=>t.id===c.ids[0]),idx2=trinkets.findIndex(t=>t.id===c.ids[1])
-                const p1=getDriftPos(c.ids[0],getAnimPos(c.ids[0],fp1),idx1)
-                const p2=getDriftPos(c.ids[1],getAnimPos(c.ids[1],fp2),idx2)
+                const p1raw=getDriftPos(c.ids[0],getAnimPos(c.ids[0],fp1),idx1)
+                const p2raw=getDriftPos(c.ids[1],getAnimPos(c.ids[1],fp2),idx2)
+                const ldx=p2raw.x-p1raw.x, ldy=p2raw.y-p1raw.y
+                const llen=Math.sqrt(ldx*ldx+ldy*ldy)||1
+                const nr1=nodeR(trinkets.find(t=>t.id===c.ids[0])?.name||'',c.ids[0])
+                const nr2=nodeR(trinkets.find(t=>t.id===c.ids[1])?.name||'',c.ids[1])
+                const p1={x:p1raw.x+(ldx/llen)*nr1, y:p1raw.y+(ldy/llen)*nr1}
+                const p2={x:p2raw.x-(ldx/llen)*nr2, y:p2raw.y-(ldy/llen)*nr2}
                 const s=LS[c.inferred?'inferred':c.type]||LS.historical
                 const isSel=selectedConn===c
                 const isHov=hoveredNode&&c.ids.includes(hoveredNode)
