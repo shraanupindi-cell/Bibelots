@@ -233,12 +233,16 @@ Return ONLY valid JSON, no markdown, no extra text:
   }
   const getDriftPos=(id,ap,idx)=>{
     if(!ap||(nodeProgress[id]??0)<1) return ap
-    // Small circular drift around settled position — no circular dependency
-    const phase=(idx/Math.max(trinkets.length,1))*2*Math.PI
-    const driftR=10
+    // Revolve around You node — each node rotates at its own slow speed
+    const rp=rawPos[id]; if(!rp) return ap
+    const dist=Math.sqrt((rp.x-cx)**2+(rp.y-cy)**2)||1
+    // Slower orbit for outer nodes (Kepler), very slow overall
+    const speed=0.08*(1-(dist/MAX_R)*0.4)
+    const originalAngle=Math.atan2(rp.y-cy,rp.x-cx)
+    const currentAngle=originalAngle+orbitAngle*speed
     return{
-      x:ap.x+Math.cos(orbitAngle+phase)*driftR,
-      y:ap.y+Math.sin(orbitAngle+phase)*driftR,
+      x:cx+dist*Math.cos(currentAngle),
+      y:cy+dist*Math.sin(currentAngle),
     }
   }
 
