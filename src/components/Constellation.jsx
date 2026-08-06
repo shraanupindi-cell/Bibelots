@@ -25,6 +25,13 @@ const LS = {
   AI:          {w:2,   dash:'8 3',        op:0.95},
 }
 
+// Confidence-based visual weight for AI connections
+function aiLineStyle(confidence) {
+  if (confidence === 3) return { w: 2.5, dash: undefined,  op: 1.0 }   // strong — solid thick
+  if (confidence === 2) return { w: 1.5, dash: '6 3',      op: 0.85 }  // medium — long dash
+  return                        { w: 1,   dash: '3 5',      op: 0.6 }   // weak — sparse dot
+}
+
 function spreadNodes(rawPos, minDist, cx, cy, youR, iters=120) {
   const pos = Object.fromEntries(Object.entries(rawPos).map(([k,v])=>[k,{x:v.x,y:v.y}]))
   const ids = Object.keys(pos)
@@ -59,6 +66,10 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
   const [aiLoading, setAiLoading] = useState(false)
   const [showTip, setShowTip] = useState(()=>!localStorage.getItem('bib_tip'))
   const [ripple, setRipple] = useState({id:null,r:0})
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({x:0,y:0})
+  const isPanning = useRef(false)
+  const panStart = useRef({x:0,y:0,px:0,py:0})
   const orbitRef = useRef(null)
   const rippleRef = useRef(null)
 
@@ -109,15 +120,29 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
       return parts.join(', ')
     }).join('\n')
 
-    const prompt=`You are an expert in material culture, history, and the psychology of collecting.
+    const prompt=`You are an ontologist and cultural historian specialising in material culture. Map semantic relationships between objects using formal ontological reasoning.
 
-Here is someone's personal collection of objects:
+OBJECTS:
 ${list}
 
-Find 4-6 interesting connections between pairs. Connections can be historical, geographic, material, cultural, personal, conceptual, or economic.
+RELATIONSHIP TYPES:
+- is-a: both belong to same category (numismatic objects, devotional objects, craft objects)
+- has-a: compositional — share the same material process or component
+- made-in: same city, region, or production centre
+- made-by: same maker tradition, guild, or craft lineage
+- traded-via: connected through same trade route, market, or colonial economy
+- coexisted-with: both circulated in same time and place
+- preceded-by: one tradition directly gave rise to the other
+- influenced-by: one tradition demonstrably shaped the other
 
-Return ONLY valid JSON, no markdown, no extra text:
-{"connections":[{"object1":"exact name","object2":"exact name","type":"cultural","label":"4-6 word label","detail":"2 sentences with specific facts."}]}`
+RULES:
+1. Only assert relationships that are historically or materially verifiable. No symbolism. No metaphor.
+2. If no verifiable link exists between two objects, do not include that pair.
+3. Confidence: 3=direct verifiable (same dynasty/kiln/route), 2=strong circumstantial (same region/period), 1=skip.
+4. Max 6 connections. Only confidence 2 or 3.
+
+Return ONLY valid JSON:
+{"connections":[{"object1":"exact name","object2":"exact name","relation":"is-a","confidence":3,"label":"4-6 word label","detail":"1-2 sentences naming the dynasty, trade route, craft tradition, or geographic centre."}]}`
 
     fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
@@ -284,7 +309,20 @@ Return ONLY valid JSON, no markdown, no extra text:
               <button onClick={onBack} style={{padding:'10px 28px',borderRadius:'99px',border:'0.5px solid #E8E0D0',background:'none',color:'#E8E0D0',fontFamily:'Inconsolata,monospace',fontSize:'12px',letterSpacing:'0.06em',cursor:'pointer'}}>← add more objects</button>
             </div>
           ):(
-            <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',maxWidth:`${W}px`,maxHeight:'60vh'}}>
+            <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',maxWidth:`${W}px`,maxHeight:'60vh',cursor:isPanning.current?'grabbing':'grab'}}
+              onWheel={e=>{
+                e.preventDefault()
+                setZoom(z=>Math.max(0.5,Math.min(3,z*(e.deltaY<0?1.1:0.9))))
+              }}
+              onMouseDown={e=>{isPanning.current=true;panStart.current={x:e.clientX,y:e.clientY,px:pan.x,py:pan.y}}}
+              onMouseMove={e=>{if(!isPanning.current)return;setPan({x:panStart.current.px+(e.clientX-panStart.current.x)/zoom,y:panStart.current.py+(e.clientY-panStart.current.y)/zoom})}}
+              onMouseUp={()=>{isPanning.current=false}}
+              onMouseLeave={()=>{isPanning.current=false}}
+              onTouchStart={e=>{const t=e.touches[0];isPanning.current=true;panStart.current={x:t.clientX,y:t.clientY,px:pan.x,py:pan.y}}}
+              onTouchMove={e=>{if(!isPanning.current)return;const t=e.touches[0];setPan({x:panStart.current.px+(t.clientX-panStart.current.x)/zoom,y:panStart.current.py+(t.clientY-panStart.current.y)/zoom})}}
+              onTouchEnd={()=>{isPanning.current=false}}
+            >
+              <g transform={`translate(${pan.x},${pan.y}) scale(${zoom}) translate(${-pan.x},${-pan.y})`}>
 
               {/* Rings */}
               {sortedYears.map((year,yi)=>{
@@ -326,7 +364,7 @@ Return ONLY valid JSON, no markdown, no extra text:
                 const nr2=nodeR(trinkets.find(t=>t.id===c.ids[1])?.name||'',c.ids[1])
                 const p1={x:p1raw.x+(ldx/llen)*nr1, y:p1raw.y+(ldy/llen)*nr1}
                 const p2={x:p2raw.x-(ldx/llen)*nr2, y:p2raw.y-(ldy/llen)*nr2}
-                const s=LS[c.inferred?'inferred':c.type]||LS.historical
+                const s=c.ai ? aiLineStyle(c.confidence||2) : (LS[c.inferred?'inferred':c.type]||LS.historical)
                 const isSel=selectedConn===c
                 const isHov=hoveredNode&&c.ids.includes(hoveredNode)
                 const dimmed=hoveredNode&&!isHov
@@ -389,7 +427,13 @@ Return ONLY valid JSON, no markdown, no extra text:
                   </g>
                 )
               })}
+              </g>
             </svg>
+            <div style={{position:'absolute',right:'8px',top:'50%',transform:'translateY(-50%)',display:'flex',flexDirection:'column',gap:'4px'}}>
+              <button onClick={()=>setZoom(z=>Math.min(3,z*1.2))} style={{width:'28px',height:'28px',borderRadius:'99px',border:'0.5px solid #444',background:'rgba(30,30,30,0.8)',color:'#E8E0D0',fontSize:'16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Inconsolata,monospace'}}>+</button>
+              <button onClick={()=>setZoom(1)} style={{width:'28px',height:'28px',borderRadius:'99px',border:'0.5px solid #444',background:'rgba(30,30,30,0.8)',color:'#A0A090',fontSize:'10px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Inconsolata,monospace'}}>⌂</button>
+              <button onClick={()=>setZoom(z=>Math.max(0.5,z*0.8))} style={{width:'28px',height:'28px',borderRadius:'99px',border:'0.5px solid #444',background:'rgba(30,30,30,0.8)',color:'#E8E0D0',fontSize:'16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Inconsolata,monospace'}}>−</button>
+            </div>
           )}
 
           {/* Legend */}
@@ -422,7 +466,10 @@ Return ONLY valid JSON, no markdown, no extra text:
             return(
               <div style={{position:'absolute',bottom:'72px',background:'#141414',border:'0.5px solid #3A3A3A',borderRadius:'6px',padding:'12px 16px',maxWidth:'400px',textAlign:'center',maxHeight:'200px',overflowY:'auto',animation:'fadeUp 0.2s ease forwards',zIndex:10}}>
                 <div style={{fontSize:'13px',color:'#E8E0D0',fontFamily:'Inconsolata,monospace',marginBottom:'5px',fontWeight:500}}>{a?.name} × {b?.name}</div>
-                <div style={{fontSize:'11px',color:'#A89880',fontFamily:'Inconsolata,monospace',marginBottom:'5px',fontStyle:'italic'}}>{selectedConn.label}</div>
+                <div style={{fontSize:'11px',color:'#A89880',fontFamily:'Inconsolata,monospace',marginBottom:'3px',fontStyle:'italic'}}>{selectedConn.label}</div>
+                {selectedConn.ai&&<div style={{fontSize:'10px',color:'#6A8860',fontFamily:'Inconsolata,monospace',marginBottom:'5px',letterSpacing:'0.06em'}}>
+                  {selectedConn.type} · confidence {selectedConn.confidence===3?'high':selectedConn.confidence===2?'medium':'low'}
+                </div>}
                 {selectedConn.detail&&<div style={{fontSize:'11px',color:'#909088',fontFamily:'Inconsolata,monospace',lineHeight:1.75}}>{selectedConn.detail}</div>}
                 <button onClick={()=>setSelectedConn(null)} style={{marginTop:'10px',background:'none',border:'0.5px solid #555',borderRadius:'99px',padding:'5px 16px',color:'#A0A090',fontSize:'11px',cursor:'pointer',fontFamily:'Inconsolata,monospace'}}>dismiss</button>
               </div>
