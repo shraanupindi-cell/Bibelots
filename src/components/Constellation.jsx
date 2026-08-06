@@ -434,7 +434,7 @@ Return ONLY valid JSON:
               <button onClick={()=>setZoom(1)} style={{width:'28px',height:'28px',borderRadius:'99px',border:'0.5px solid #444',background:'rgba(30,30,30,0.8)',color:'#A0A090',fontSize:'10px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Inconsolata,monospace'}}>⌂</button>
               <button onClick={()=>setZoom(z=>Math.max(0.5,z*0.8))} style={{width:'28px',height:'28px',borderRadius:'99px',border:'0.5px solid #444',background:'rgba(30,30,30,0.8)',color:'#E8E0D0',fontSize:'16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Inconsolata,monospace'}}>−</button>
             </div>
-          )}
+          </> )}
 
           {/* Legend */}
           {trinkets.length>=3&&(
