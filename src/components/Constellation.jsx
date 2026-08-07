@@ -32,7 +32,7 @@ function aiLineStyle(confidence) {
   return                        { w: 1,   dash: '3 5',      op: 0.6 }   // weak — sparse dot
 }
 
-function spreadNodes(rawPos, minDist, cx, cy, youR, iters=120) {
+function spreadNodes(rawPos, minDist, cx, cy, youR, W, H, margin, iters=120) {
   const pos = Object.fromEntries(Object.entries(rawPos).map(([k,v])=>[k,{x:v.x,y:v.y}]))
   const ids = Object.keys(pos)
   const minFromCentre = youR + minDist * 0.7
@@ -47,6 +47,13 @@ function spreadNodes(rawPos, minDist, cx, cy, youR, iters=120) {
       if(d<minDist&&d>0){const push=(minDist-d)/2,nx=dx/d,ny=dy/d;pos[ids[i]]={x:a.x-nx*push,y:a.y-ny*push};pos[ids[j]]={x:b.x+nx*push,y:b.y+ny*push};moved=true}
     }
     if(!moved) break
+  }
+  // Re-clamp every node inside canvas bounds after repulsion — prevents nodes escaping visible area
+  if(W&&H&&margin!=null){
+    for(const id of ids){
+      pos[id].x=Math.max(margin,Math.min(W-margin,pos[id].x))
+      pos[id].y=Math.max(margin,Math.min(H-margin,pos[id].y))
+    }
   }
   return pos
 }
@@ -123,7 +130,7 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
 OBJECTS IN THIS COLLECTION:
 ${list}
 
-TASK: For every pair of objects, first silently ask yourself: "What specific, real, documented historical fact connects these two?" If you cannot name a real dynasty, empire, trade route, colonial company, craft guild, or production centre — with an approximate date range — then there is NO connection. Most pairs will have NO connection. That is correct and expected.
+TASK: For every pair of objects, ask yourself: "What specific, real, documented historical fact connects these two?" Consider shared dynasty, empire, region, trade route, colonial period, craft tradition, or production centre. Use the date of origin and place fields provided — they are your primary evidence. If two objects share an overlapping era and region, that is a valid P12i connection even if not from the exact same dynasty.
 
 Only use these three CIDOC CRM relationship types:
 
@@ -144,7 +151,7 @@ Object names in your response must match EXACTLY as written in the list above.
 
 Confidence 3 = same specific entity (same dynasty, same workshop, same named trade route). Confidence 2 = same broader region with overlapping documented period. Do not output confidence 1.
 
-Return ONLY valid JSON. If zero or one verified connections exist, return {"connections":[]}.
+Return ONLY valid JSON with every connection you can verify (this may be zero, one, or several).
 {"connections":[{"object1":"EXACT name from list","object2":"EXACT name from list","relation":"P12i","confidence":3,"label":"4-6 word factual label","detail":"Name the exact dynasty/route/institution and date range."}]}`
 
     fetch('https://api.groq.com/openai/v1/chat/completions',{
@@ -225,7 +232,7 @@ Return ONLY valid JSON. If zero or one verified connections exist, return {"conn
   const margin=isMobile?44:62
   const youR=isMobile?26:32
 
-  const trinketYears=useMemo(()=>trinkets.map(t=>parseYear(t.date)||2000),[trinkets])
+  const trinketYears=useMemo(()=>trinkets.map(t=>parseYear(t.dateOrigin)||parseYear(t.date)||2000),[trinkets])
   const minYear=useMemo(()=>Math.min(...trinketYears),[trinketYears])
   const maxYear=useMemo(()=>Math.max(...trinketYears),[trinketYears])
 
@@ -257,7 +264,7 @@ Return ONLY valid JSON. If zero or one verified connections exist, return {"conn
     return Math.round(base)
   }
   const minDist=useMemo(()=>(trinkets.length?Math.max(...trinkets.map(t=>nodeR(t.name,t.id)))*2+20:50),[trinkets,ringRadii])
-  const finalPos=useMemo(()=>spreadNodes(rawPos,minDist,cx,cy,youR),[rawPos,minDist,cx,cy,youR])
+  const finalPos=useMemo(()=>spreadNodes(rawPos,minDist,cx,cy,youR,W,H,margin),[rawPos,minDist,cx,cy,youR,W,H,margin])
 
   const getAnimPos=(id,fp)=>{
     const p=nodeProgress[id]??0
@@ -400,12 +407,16 @@ Return ONLY valid JSON. If zero or one verified connections exist, return {"conn
                 const fill=getNodeFill(idx)
                 const tc=getTextFill(fill)
                 const dimmed=hoveredNode&&hoveredNode!==t.id&&!hoveredConnIds.has(t.id)
+                // Font size and wrap width scale with actual node radius so text always fits
+                const fontSize=Math.max(7,Math.min(nr*0.34,isMobile?10:13))
+                const charsPerLine=Math.max(4,Math.floor((nr*1.7)/(fontSize*0.56)))
                 const words=t.name.split(' ')
                 let lines=[],line=''
-                words.forEach(w=>{if((line+' '+w).trim().length<=11){line=(line+' '+w).trim()}else{if(line)lines.push(line);line=w}})
+                words.forEach(w=>{if((line+' '+w).trim().length<=charsPerLine){line=(line+' '+w).trim()}else{if(line)lines.push(line);line=w}})
                 if(line) lines.push(line)
-                lines=lines.slice(0,2)
-                const lh=11,startY=p.y-((lines.length-1)*lh)/2
+                const maxLines=Math.max(1,Math.floor((nr*1.6)/(fontSize*1.15)))
+                lines=lines.slice(0,maxLines)
+                const lh=fontSize*1.15,startY=p.y-((lines.length-1)*lh)/2
                 const angle=Math.atan2(p.y-cy,p.x-cx)
                 return(
                   <g key={t.id}
@@ -426,7 +437,7 @@ Return ONLY valid JSON. If zero or one verified connections exist, return {"conn
                     {ripple.id===t.id&&<circle cx={p.x} cy={p.y} r={ripple.r} fill="none" stroke="#E8E0D0" strokeWidth="0.5" opacity={Math.max(0,0.4-(ripple.r-nr)/36*0.4)}/>}
                     <circle cx={p.x} cy={p.y} r={nr} fill={fill} stroke="#C8C4BC" strokeWidth={fill==='#E8E0D0'?1.5:0.8} opacity={dimmed?0.2:1} style={{transition:'opacity 0.3s ease'}}/>
                     {lines.map((ln,li)=>(
-                      <text key={li} x={p.x} y={startY+li*lh} textAnchor="middle" dominantBaseline="central" fontSize={isMobile?9:12} fill={tc} fontFamily="Inconsolata,monospace" fontWeight="600" opacity={dimmed?0.2:1}>{ln}</text>
+                      <text key={li} x={p.x} y={startY+li*lh} textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fill={tc} fontFamily="Inconsolata,monospace" fontWeight="600" opacity={dimmed?0.2:1}>{ln}</text>
                     ))}
                     {t.date&&<text x={p.x+Math.cos(angle)*(nr+18)} y={p.y+Math.sin(angle)*(nr+12)} textAnchor="middle" fontSize={isMobile?9:11} fill="#A0A090" fontFamily="Inconsolata,monospace" opacity={dimmed?0.1:1}>{t.date}</text>}
                   </g>
