@@ -301,7 +301,7 @@ Return ONLY valid JSON:
             </div>
           ):(
             <div
-              style={{width:'100%',maxHeight:'62vh',overflow:'hidden',cursor:isDragging.current?'grabbing':'grab',touchAction:'none',overscrollBehavior:'none'}}
+              style={{width:'100%',maxHeight:'50vh',overflow:'hidden',cursor:isDragging.current?'grabbing':'grab',touchAction:'none',overscrollBehavior:'none'}}
               onWheel={e=>{setZoom(z=>Math.max(0.5,Math.min(4,z*(e.deltaY<0?1.12:0.9))))}}
               onMouseDown={e=>{isDragging.current=true;dragStart.current={x:e.clientX,y:e.clientY,px:pan.x,py:pan.y}}}
               onMouseMove={e=>{if(!isDragging.current)return;setPan({x:dragStart.current.px+(e.clientX-dragStart.current.x),y:dragStart.current.py+(e.clientY-dragStart.current.y)})}}
@@ -312,7 +312,7 @@ Return ONLY valid JSON:
               onTouchEnd={()=>{isDragging.current=false}}
             >
               <div style={{transform:`translate(${pan.x}px,${pan.y}px) scale(${zoom})`,transformOrigin:'center center',transition:isDragging.current?'none':'transform 0.05s'}}>
-            <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',maxWidth:`${W}px`,maxHeight:'55vh',height:'auto',display:'block'}}>
+            <svg viewBox={`0 0 ${W} ${H}`} style={{width:'auto',height:'auto',maxWidth:`${W}px`,maxHeight:'50vh',display:'block',margin:'0 auto'}}>
 
               {/* Rings */}
               {sortedYears.map((year,yi)=>{
