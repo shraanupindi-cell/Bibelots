@@ -51,7 +51,7 @@ function Sel({ value, onChange, options, placeholder, style={} }) {
 }
 
 const EMPTY = {
-  name:'', place:'', date:'', emotion:'',
+  name:'', place:'', date:'', dateOrigin:'', dateAcquisition:'', emotion:'',
   acquisition:'', material:'', note:'', material_type:''
 }
 
@@ -65,7 +65,8 @@ function EditableItem({ trinket, onSave, onRemove, onCancel }) {
         <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Object" />
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
           <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.place||''} onChange={e=>set('place',e.target.value)} placeholder="Place" />
-          <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.date||''} onChange={e=>set('date',e.target.value)} placeholder="Date" />
+          <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.date||''} onChange={e=>set('date',e.target.value)} placeholder="Date acquired" />
+          <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.dateOrigin||''} onChange={e=>set('dateOrigin',e.target.value)} placeholder="Date of origin (optional)" />
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
           <select style={{...pillSel, fontSize:'11px'}} value={form.emotion||''} onChange={e=>set('emotion',e.target.value)}>
@@ -115,7 +116,11 @@ export default function Entry({ trinkets, onAdd, onRemove, onUpdate, onMap }) {
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
             <input style={pill} placeholder="Place" value={form.place} onChange={e=>set('place',e.target.value)} />
-            <input style={pill} placeholder="Date / Year" value={form.date} onChange={e=>set('date',e.target.value)} />
+            <input style={pill} placeholder="Date acquired" value={form.date} onChange={e=>set('date',e.target.value)} />
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
+            <input style={pill} placeholder="Date of origin (optional)" value={form.dateOrigin||''} onChange={e=>set('dateOrigin',e.target.value)} />
+            <input style={pill} placeholder="Date acquired" value={form.dateAcquisition||''} onChange={e=>set('dateAcquisition',e.target.value)} />
           </div>
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>

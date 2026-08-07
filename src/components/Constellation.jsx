@@ -104,7 +104,8 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
 
     const list=trinkets.map((t,i)=>{
       const parts=[`${i+1}. "${t.name}"`]
-      if(t.date) parts.push(`date: ${t.date}`)
+      if(t.dateOrigin) parts.push(`origin date: ${t.dateOrigin}`)
+      if(t.date) parts.push(`acquired: ${t.date}`)
       if(t.place) parts.push(`place: ${t.place}`)
       if(t.material) parts.push(`material: ${t.material}`)
       if(t.note) parts.push(`note: "${t.note}"`)
@@ -311,7 +312,7 @@ Return ONLY valid JSON:
               onTouchEnd={()=>{isDragging.current=false}}
             >
               <div style={{transform:`translate(${pan.x}px,${pan.y}px) scale(${zoom})`,transformOrigin:'center center',transition:isDragging.current?'none':'transform 0.05s'}}>
-            <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',height:'auto',display:'block'}}>
+            <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',maxWidth:`${W}px`,maxHeight:'55vh',height:'auto',display:'block'}}>
 
               {/* Rings */}
               {sortedYears.map((year,yi)=>{
@@ -437,14 +438,9 @@ Return ONLY valid JSON:
             </div>
           )}
 
-          {/* Zoom controls */}
+          {/* Zoom hint */}
           {trinkets.length>=3&&(
-            <div style={{display:'flex',gap:'6px',alignItems:'center',marginTop:'4px'}}>
-              <button onClick={()=>setZoom(z=>Math.min(4,z*1.2))} style={{padding:'3px 10px',borderRadius:'99px',border:'0.5px solid #444',background:'none',color:'#A0A090',fontFamily:'Inconsolata,monospace',fontSize:'11px',cursor:'pointer'}}>+</button>
-              <button onClick={()=>{setZoom(1);setPan({x:0,y:0})}} style={{padding:'3px 10px',borderRadius:'99px',border:'0.5px solid #444',background:'none',color:'#686860',fontFamily:'Inconsolata,monospace',fontSize:'10px',cursor:'pointer'}}>Reset</button>
-              <button onClick={()=>setZoom(z=>Math.max(0.5,z*0.8))} style={{padding:'3px 10px',borderRadius:'99px',border:'0.5px solid #444',background:'none',color:'#A0A090',fontFamily:'Inconsolata,monospace',fontSize:'11px',cursor:'pointer'}}>-</button>
-              <span style={{fontFamily:'Inconsolata,monospace',fontSize:'10px',color:'#484840',marginLeft:'4px'}}>scroll to zoom, drag to pan</span>
-            </div>
+            <p style={{fontFamily:'Inconsolata,monospace',fontSize:'10px',color:'#484840',marginTop:'4px',letterSpacing:'0.04em'}}>scroll to zoom . drag to pan</p>
           )}
 
           {/* First-use tip */}
