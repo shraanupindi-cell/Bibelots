@@ -77,22 +77,13 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
   const inferredConns = useMemo(()=>findInferredConnections(trinkets),[trinkets])
 
   // activeConns: AI connections take priority over hardcoded inferred
+  // activeConns: known = manually verified, inferred+AI = AI only (no hardcoded inferred)
   const activeConns = useMemo(()=>{
     const result = []
     if(showKnown) result.push(...knownConns)
-    if(showInferred){
-      // Add AI connections first
-      result.push(...aiConns)
-      const aiSeen = new Set(aiConns.map(c=>`${Math.min(...c.ids)}-${Math.max(...c.ids)}`))
-      const knownSeen = new Set(knownConns.map(c=>`${Math.min(...c.ids)}-${Math.max(...c.ids)}`))
-      // Only add hardcoded inferred if AI hasn't covered that pair
-      inferredConns.forEach(c=>{
-        const k=`${Math.min(...c.ids)}-${Math.max(...c.ids)}`
-        if(!aiSeen.has(k) && !knownSeen.has(k)) result.push(c)
-      })
-    }
+    if(showInferred) result.push(...aiConns)
     return result
-  },[showKnown,showInferred,knownConns,inferredConns,aiConns])
+  },[showKnown,showInferred,knownConns,aiConns])
 
   const axes = getAxisScores(trinkets)
 
@@ -120,7 +111,7 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
       return parts.join(', ')
     }).join('\n')
 
-    const prompt=`You are an ontologist and cultural historian specialising in material culture. Map semantic relationships between objects using formal ontological reasoning.
+    const prompt=`You are a strict ontologist and cultural historian. Your task is to find ONLY verifiable, historically documented relationships between physical objects. You must reason like a museum curator with access to a knowledge graph.
 
 OBJECTS:
 ${list}
@@ -217,11 +208,8 @@ Return ONLY valid JSON:
 
   const isMobile=window.innerWidth<600
   const n=trinkets.length||3
-  const W=isMobile?360:Math.min(460+n*18,800)
-  const H=isMobile?340:Math.min(380+n*16,660)
-  const cx=W/2,cy=H/2
-  const MAX_R=isMobile?130:Math.min(160+n*10,300)
-  const MIN_R=isMobile?42:Math.min(50+n*4,80)
+  const W=isMobile?360:700,H=isMobile?340:560,cx=W/2,cy=H/2
+  const MAX_R=isMobile?130:265,MIN_R=isMobile?42:75
   const margin=isMobile?44:62
   const youR=isMobile?26:32
 
@@ -252,14 +240,9 @@ Return ONLY valid JSON:
 
   const nodeR=(name, id)=>{
     const maxLen=Math.max(...(name||'').split(' ').map(w=>w.length))
-    // Shrink base size as node count grows
-    const countScale=Math.max(0.5, 1-(n-3)*0.05)
-    const textBase=Math.max(isMobile?11:13,Math.min(maxLen*(isMobile?3:3.8)*countScale+5,isMobile?24:32))
-    // Subtle distance bonus — older nodes slightly bigger
-    const r=ringRadii[id]||MIN_R
-    const distT=Math.min((r-MIN_R)/(MAX_R-MIN_R),1)
-    const distBonus=distT*(isMobile?4:6)*countScale
-    return Math.round(textBase+distBonus)
+    const countScale=Math.max(0.55, 1-(n-3)*0.06)
+    const base=Math.max(isMobile?11:14,Math.min(maxLen*(isMobile?3.2:4.0)*countScale+5,isMobile?26:34))
+    return Math.round(base)
   }
   const minDist=useMemo(()=>(trinkets.length?Math.max(...trinkets.map(t=>nodeR(t.name,t.id)))*2+20:50),[trinkets,ringRadii])
   const finalPos=useMemo(()=>spreadNodes(rawPos,minDist,cx,cy,youR),[rawPos,minDist,cx,cy,youR])
@@ -276,7 +259,7 @@ Return ONLY valid JSON:
     // Each node drifts in a tiny circle around its own settled position
     // Phase offset by golden angle per node — they never sync
     const phase=idx*2.399963
-    const driftR=5
+    const driftR=7
     return{
       x:ap.x+Math.cos(orbitAngle+phase)*driftR,
       y:ap.y+Math.sin(orbitAngle+phase)*driftR,
