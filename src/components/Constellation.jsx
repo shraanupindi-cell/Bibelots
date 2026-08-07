@@ -168,7 +168,7 @@ Return ONLY valid JSON. If zero or one verified connections exist, return {"conn
         const a=trinkets.find(t=>t.name.toLowerCase()===n1||n1.includes(t.name.toLowerCase().split(' ')[0]))
         const b=trinkets.find(t=>t.name.toLowerCase()===n2||n2.includes(t.name.toLowerCase().split(' ')[0]))
         if(!a||!b||a.id===b.id) return null
-        return{ids:[a.id,b.id],type:c.type||'cultural',label:c.label,detail:c.detail,inferred:true,ai:true}
+        return{ids:[a.id,b.id],type:c.relation||c.type||'P12i',label:c.label,detail:c.detail,confidence:c.confidence||2,inferred:true,ai:true}
       }).filter(Boolean)
       setAiConns(mapped)
       sessionStorage.setItem(cacheKey,JSON.stringify(mapped))
@@ -464,7 +464,7 @@ Return ONLY valid JSON. If zero or one verified connections exist, return {"conn
                 <div style={{fontSize:'13px',color:'#E8E0D0',fontFamily:'Inconsolata,monospace',marginBottom:'5px',fontWeight:500}}>{a?.name} x {b?.name}</div>
                 <div style={{fontSize:'11px',color:'#A89880',fontFamily:'Inconsolata,monospace',marginBottom:'3px',fontStyle:'italic'}}>{selectedConn.label}</div>
                 {selectedConn.ai&&<div style={{fontSize:'10px',color:'#6A8860',fontFamily:'Inconsolata,monospace',marginBottom:'5px',letterSpacing:'0.06em'}}>
-                  {selectedConn.type} . confidence {selectedConn.confidence===3?'high':selectedConn.confidence===2?'medium':'low'}
+                  {({'P9i':'shared creation tradition','P12i':'shared historical period','P30i':'shared custody network'})[selectedConn.type]||selectedConn.type} . confidence {selectedConn.confidence===3?'high':'medium'}
                 </div>}
                 {selectedConn.detail&&<div style={{fontSize:'11px',color:'#909088',fontFamily:'Inconsolata,monospace',lineHeight:1.75}}>{selectedConn.detail}</div>}
                 <button onClick={()=>setSelectedConn(null)} style={{marginTop:'10px',background:'none',border:'0.5px solid #555',borderRadius:'99px',padding:'5px 16px',color:'#A0A090',fontSize:'11px',cursor:'pointer',fontFamily:'Inconsolata,monospace'}}>Dismiss</button>
