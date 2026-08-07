@@ -217,12 +217,12 @@ Return ONLY valid JSON:
 
   const isMobile=window.innerWidth<600
   const n=trinkets.length||3
-  const W=isMobile?360:Math.min(560+n*28,960)
-  const H=isMobile?360:Math.min(480+n*24,800)
+  const W=isMobile?360:Math.min(460+n*18,800)
+  const H=isMobile?340:Math.min(380+n*16,660)
   const cx=W/2,cy=H/2
-  const MAX_R=isMobile?140:Math.min(200+n*14,380)
-  const MIN_R=isMobile?44:Math.min(55+n*5,100)
-  const margin=isMobile?44:68
+  const MAX_R=isMobile?130:Math.min(160+n*10,300)
+  const MIN_R=isMobile?42:Math.min(50+n*4,80)
+  const margin=isMobile?44:62
   const youR=isMobile?26:32
 
   const trinketYears=useMemo(()=>trinkets.map(t=>parseYear(t.date)||2000),[trinkets])
@@ -252,11 +252,13 @@ Return ONLY valid JSON:
 
   const nodeR=(name, id)=>{
     const maxLen=Math.max(...(name||'').split(' ').map(w=>w.length))
-    const textBase=Math.max(isMobile?13:16,Math.min(maxLen*(isMobile?3.8:4.8)+7,isMobile?32:42))
-    // Older/further objects get bigger nodes
+    // Shrink base size as node count grows
+    const countScale=Math.max(0.5, 1-(n-3)*0.05)
+    const textBase=Math.max(isMobile?11:13,Math.min(maxLen*(isMobile?3:3.8)*countScale+5,isMobile?24:32))
+    // Subtle distance bonus — older nodes slightly bigger
     const r=ringRadii[id]||MIN_R
     const distT=Math.min((r-MIN_R)/(MAX_R-MIN_R),1)
-    const distBonus=distT*(isMobile?10:18)
+    const distBonus=distT*(isMobile?4:6)*countScale
     return Math.round(textBase+distBonus)
   }
   const minDist=useMemo(()=>(trinkets.length?Math.max(...trinkets.map(t=>nodeR(t.name,t.id)))*2+20:50),[trinkets,ringRadii])
@@ -315,8 +317,8 @@ Return ONLY valid JSON:
             </div>
           ):(
             <div
-              style={{width:'100%',maxHeight:'62vh',overflow:'hidden',cursor:isDragging.current?'grabbing':'grab',touchAction:'none'}}
-              onWheel={e=>{e.preventDefault();setZoom(z=>Math.max(0.5,Math.min(4,z*(e.deltaY<0?1.12:0.9))))}}
+              style={{width:'100%',maxHeight:'62vh',overflow:'hidden',cursor:isDragging.current?'grabbing':'grab',touchAction:'none',overscrollBehavior:'none'}}
+              onWheel={e=>{setZoom(z=>Math.max(0.5,Math.min(4,z*(e.deltaY<0?1.12:0.9))))}}
               onMouseDown={e=>{isDragging.current=true;dragStart.current={x:e.clientX,y:e.clientY,px:pan.x,py:pan.y}}}
               onMouseMove={e=>{if(!isDragging.current)return;setPan({x:dragStart.current.px+(e.clientX-dragStart.current.x),y:dragStart.current.py+(e.clientY-dragStart.current.y)})}}
               onMouseUp={()=>{isDragging.current=false}}
