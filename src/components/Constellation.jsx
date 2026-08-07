@@ -66,10 +66,6 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
   const [aiLoading, setAiLoading] = useState(false)
   const [showTip, setShowTip] = useState(()=>!localStorage.getItem('bib_tip'))
   const [ripple, setRipple] = useState({id:null,r:0})
-  const [zoom, setZoom] = useState(1)
-  const [pan, setPan] = useState({x:0,y:0})
-  const isPanning = useRef(false)
-  const panStart = useRef({x:0,y:0,px:0,py:0})
   const orbitRef = useRef(null)
   const rippleRef = useRef(null)
 
@@ -289,16 +285,16 @@ Return ONLY valid JSON:
           <div style={{display:'flex',gap:'8px',marginBottom:'4px',flexWrap:'wrap',justifyContent:'center',alignItems:'center'}}>
             <span style={{fontFamily:'Inconsolata,monospace',fontSize:'10px',color:'#686860',letterSpacing:'0.04em'}}>show:</span>
             <button onClick={()=>setShowKnown(v=>!v)} style={{padding:'5px 14px',borderRadius:'99px',border:`1px solid ${showKnown?'#E8E0D0':'#444'}`,background:showKnown?'rgba(232,224,208,0.15)':'none',color:showKnown?'#E8E0D0':'#686860',fontFamily:'Inconsolata,monospace',fontSize:'10px',letterSpacing:'0.06em',cursor:'pointer',transition:'all 0.2s'}}>
-              {showKnown?'✓ ':''}known
+              {showKnown?' ':''}known
             </button>
             <button onClick={()=>setShowInferred(v=>!v)} style={{padding:'5px 14px',borderRadius:'99px',border:`1px solid ${showInferred?'#E8E0D0':'#444'}`,background:showInferred?'rgba(232,224,208,0.15)':'none',color:showInferred?'#E8E0D0':'#686860',fontFamily:'Inconsolata,monospace',fontSize:'10px',letterSpacing:'0.06em',cursor:'pointer',transition:'all 0.2s'}}>
-              {showInferred?'✓ ':''}inferred + AI
+              {showInferred?' ':''}inferred + AI
             </button>
-            <button onClick={()=>{setView('analysis');setAxesAnimated(false);setTimeout(()=>setAxesAnimated(true),200)}} style={{padding:'5px 14px',borderRadius:'99px',border:'0.5px solid #3A3A3A',background:'none',color:'#686860',fontFamily:'Inconsolata,monospace',fontSize:'10px',letterSpacing:'0.06em',cursor:'pointer'}}>analysis →</button>
+            <button onClick={()=>{setView('analysis');setAxesAnimated(false);setTimeout(()=>setAxesAnimated(true),200)}} style={{padding:'5px 14px',borderRadius:'99px',border:'0.5px solid #3A3A3A',background:'none',color:'#686860',fontFamily:'Inconsolata,monospace',fontSize:'10px',letterSpacing:'0.06em',cursor:'pointer'}}>analysis -></button>
           </div>
 
           {/* AI status */}
-          {aiLoading&&<p style={{fontFamily:'Inconsolata,monospace',fontSize:'11px',color:'#888870',fontStyle:'italic',marginBottom:'3px'}}>finding connections…</p>}
+          {aiLoading&&<p style={{fontFamily:'Inconsolata,monospace',fontSize:'11px',color:'#888870',fontStyle:'italic',marginBottom:'3px'}}>finding connections...</p>}
           {!aiLoading&&aiConns.length>0&&<p style={{fontFamily:'Inconsolata,monospace',fontSize:'11px',color:'#6A9060',marginBottom:'3px'}}>{aiConns.length} AI connections found</p>}
 
           {/* Empty state */}
@@ -306,23 +302,10 @@ Return ONLY valid JSON:
             <div style={{textAlign:'center',padding:'3rem 1rem'}}>
               <p style={{fontFamily:'JacquardaBastarda9,cursive',fontSize:'28px',color:'#E8E0D0',marginBottom:'12px'}}>not enough objects</p>
               <p style={{fontFamily:'Inconsolata,monospace',fontSize:'12px',color:'#808078',lineHeight:1.8,marginBottom:'20px'}}>add at least 3 objects to generate your constellation</p>
-              <button onClick={onBack} style={{padding:'10px 28px',borderRadius:'99px',border:'0.5px solid #E8E0D0',background:'none',color:'#E8E0D0',fontFamily:'Inconsolata,monospace',fontSize:'12px',letterSpacing:'0.06em',cursor:'pointer'}}>← add more objects</button>
+              <button onClick={onBack} style={{padding:'10px 28px',borderRadius:'99px',border:'0.5px solid #E8E0D0',background:'none',color:'#E8E0D0',fontFamily:'Inconsolata,monospace',fontSize:'12px',letterSpacing:'0.06em',cursor:'pointer'}}>add more objects</button>
             </div>
           ):(
-            <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',maxWidth:`${W}px`,maxHeight:'60vh',cursor:isPanning.current?'grabbing':'grab'}}
-              onWheel={e=>{
-                e.preventDefault()
-                setZoom(z=>Math.max(0.5,Math.min(3,z*(e.deltaY<0?1.1:0.9))))
-              }}
-              onMouseDown={e=>{isPanning.current=true;panStart.current={x:e.clientX,y:e.clientY,px:pan.x,py:pan.y}}}
-              onMouseMove={e=>{if(!isPanning.current)return;setPan({x:panStart.current.px+(e.clientX-panStart.current.x)/zoom,y:panStart.current.py+(e.clientY-panStart.current.y)/zoom})}}
-              onMouseUp={()=>{isPanning.current=false}}
-              onMouseLeave={()=>{isPanning.current=false}}
-              onTouchStart={e=>{const t=e.touches[0];isPanning.current=true;panStart.current={x:t.clientX,y:t.clientY,px:pan.x,py:pan.y}}}
-              onTouchMove={e=>{if(!isPanning.current)return;const t=e.touches[0];setPan({x:panStart.current.px+(t.clientX-panStart.current.x)/zoom,y:panStart.current.py+(t.clientY-panStart.current.y)/zoom})}}
-              onTouchEnd={()=>{isPanning.current=false}}
-            >
-              <g transform={`translate(${pan.x},${pan.y}) scale(${zoom}) translate(${-pan.x},${-pan.y})`}>
+            <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',maxWidth:`${W}px`,maxHeight:'60vh'}}>
 
               {/* Rings */}
               {sortedYears.map((year,yi)=>{
@@ -332,7 +315,7 @@ Return ONLY valid JSON:
                     <circle cx={cx} cy={cy} r={Math.round(r)} fill="none" stroke="#585850" strokeWidth="1.5" strokeDasharray="2 5"/>
                     {(yi===0||yi===sortedYears.length-1)&&(
                       <text x={Math.min(cx+Math.round(r)+8,W-50)} y={cy} fontSize="13" fill="#A0A090" fontFamily="Inconsolata,monospace" dominantBaseline="central" fontStyle="italic" fontWeight="600">
-                        {yi===0?`oldest · ${year}`:`newest · ${year}`}
+                        {yi===0?`oldest . ${year}`:`newest . ${year}`}
                       </text>
                     )}
                   </g>
@@ -427,15 +410,8 @@ Return ONLY valid JSON:
                   </g>
                 )
               })}
-              </g>
             </svg>
           )}
-            <div style={{position:'absolute',right:'8px',top:'50%',transform:'translateY(-50%)',display:'flex',flexDirection:'column',gap:'4px'}}>
-              <button onClick={()=>setZoom(z=>Math.min(3,z*1.2))} style={{width:'28px',height:'28px',borderRadius:'99px',border:'0.5px solid #444',background:'rgba(30,30,30,0.8)',color:'#E8E0D0',fontSize:'16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Inconsolata,monospace'}}>+</button>
-              <button onClick={()=>setZoom(1)} style={{width:'28px',height:'28px',borderRadius:'99px',border:'0.5px solid #444',background:'rgba(30,30,30,0.8)',color:'#A0A090',fontSize:'10px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Inconsolata,monospace'}}>⌂</button>
-              <button onClick={()=>setZoom(z=>Math.max(0.5,z*0.8))} style={{width:'28px',height:'28px',borderRadius:'99px',border:'0.5px solid #444',background:'rgba(30,30,30,0.8)',color:'#E8E0D0',fontSize:'16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Inconsolata,monospace'}}>−</button>
-            </div>
-          </div>
 
           {/* Legend */}
           {trinkets.length>=3&&(
@@ -449,7 +425,7 @@ Return ONLY valid JSON:
                   </div>
                 )
               })}
-              <span style={{fontFamily:'Inconsolata,monospace',fontSize:'11px',color:'#686860'}}>outer = oldest · inner = newest</span>
+              <span style={{fontFamily:'Inconsolata,monospace',fontSize:'11px',color:'#686860'}}>outer = oldest . inner = newest</span>
             </div>
           )}
 
@@ -466,10 +442,10 @@ Return ONLY valid JSON:
             const b=trinkets.find(t=>t.id===selectedConn.ids[1])
             return(
               <div style={{position:'absolute',bottom:'72px',background:'#141414',border:'0.5px solid #3A3A3A',borderRadius:'6px',padding:'12px 16px',maxWidth:'400px',textAlign:'center',maxHeight:'200px',overflowY:'auto',animation:'fadeUp 0.2s ease forwards',zIndex:10}}>
-                <div style={{fontSize:'13px',color:'#E8E0D0',fontFamily:'Inconsolata,monospace',marginBottom:'5px',fontWeight:500}}>{a?.name} × {b?.name}</div>
+                <div style={{fontSize:'13px',color:'#E8E0D0',fontFamily:'Inconsolata,monospace',marginBottom:'5px',fontWeight:500}}>{a?.name} x {b?.name}</div>
                 <div style={{fontSize:'11px',color:'#A89880',fontFamily:'Inconsolata,monospace',marginBottom:'3px',fontStyle:'italic'}}>{selectedConn.label}</div>
                 {selectedConn.ai&&<div style={{fontSize:'10px',color:'#6A8860',fontFamily:'Inconsolata,monospace',marginBottom:'5px',letterSpacing:'0.06em'}}>
-                  {selectedConn.type} · confidence {selectedConn.confidence===3?'high':selectedConn.confidence===2?'medium':'low'}
+                  {selectedConn.type} . confidence {selectedConn.confidence===3?'high':selectedConn.confidence===2?'medium':'low'}
                 </div>}
                 {selectedConn.detail&&<div style={{fontSize:'11px',color:'#909088',fontFamily:'Inconsolata,monospace',lineHeight:1.75}}>{selectedConn.detail}</div>}
                 <button onClick={()=>setSelectedConn(null)} style={{marginTop:'10px',background:'none',border:'0.5px solid #555',borderRadius:'99px',padding:'5px 16px',color:'#A0A090',fontSize:'11px',cursor:'pointer',fontFamily:'Inconsolata,monospace'}}>dismiss</button>
@@ -483,7 +459,7 @@ Return ONLY valid JSON:
               <button onClick={onBack} style={{padding:'10px 24px',borderRadius:'99px',border:'1px solid #A0A090',background:'rgba(232,224,208,0.08)',color:'#C8C4BC',fontFamily:'Inconsolata,monospace',fontSize:'12px',cursor:'pointer',letterSpacing:'0.06em',transition:'all 0.2s'}}
                 onMouseEnter={e=>{e.currentTarget.style.color='#E8E0D0';e.currentTarget.style.borderColor='#E8E0D0'}}
                 onMouseLeave={e=>{e.currentTarget.style.color='#A0A090';e.currentTarget.style.borderColor='#686858'}}>
-                ← add more objects
+                add more objects
               </button>
               <button onClick={onReveal} style={{padding:'10px 36px',borderRadius:'99px',border:'1px solid #E8E0D0',background:'none',color:'#E8E0D0',fontFamily:'JacquardaBastarda9,cursive',fontSize:'20px',cursor:'pointer',transition:'all 0.2s'}}
                 onMouseEnter={e=>{e.currentTarget.style.background='#E8E0D0';e.currentTarget.style.color='#1E1E1E'}}
@@ -495,7 +471,7 @@ Return ONLY valid JSON:
         </div>
       ):(
         <div style={{position:'fixed',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'3rem',background:'#1E1E1E'}}>
-          <button onClick={()=>setView('map')} style={{position:'absolute',top:'24px',left:'24px',background:'none',border:'none',color:'#888',fontFamily:'Inconsolata,monospace',fontSize:'12px',cursor:'pointer',letterSpacing:'0.06em'}}>← map</button>
+          <button onClick={()=>setView('map')} style={{position:'absolute',top:'24px',left:'24px',background:'none',border:'none',color:'#888',fontFamily:'Inconsolata,monospace',fontSize:'12px',cursor:'pointer',letterSpacing:'0.06em'}}>map</button>
           <h2 style={{fontFamily:'Inconsolata,monospace',fontSize:'clamp(28px,4vw,44px)',fontWeight:400,color:'#E8E0D0',marginBottom:'3rem',letterSpacing:'0.04em'}}>Analysis</h2>
           <div style={{width:'100%',maxWidth:'560px'}}>
             {axes.map(a=>(
