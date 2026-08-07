@@ -112,29 +112,34 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
       return parts.join(', ')
     }).join('\n')
 
-    const prompt=`You are a strict ontologist and cultural historian. Your task is to find ONLY verifiable, historically documented relationships between physical objects. You must reason like a museum curator with access to a knowledge graph.
+    const prompt=`You are a cultural heritage documentation specialist using the CIDOC Conceptual Reference Model (CIDOC CRM), the ISO standard (ISO 21127) used by museums worldwide to document object relationships. You must reason only from documented history — never invent facts.
 
-OBJECTS:
+OBJECTS IN THIS COLLECTION:
 ${list}
 
-RELATIONSHIP TYPES:
-- is-a: both belong to same category (numismatic objects, devotional objects, craft objects)
-- has-a: compositional — share the same material process or component
-- made-in: same city, region, or production centre
-- made-by: same maker tradition, guild, or craft lineage
-- traded-via: connected through same trade route, market, or colonial economy
-- coexisted-with: both circulated in same time and place
-- preceded-by: one tradition directly gave rise to the other
-- influenced-by: one tradition demonstrably shaped the other
+TASK: For every pair of objects, first silently ask yourself: "What specific, real, documented historical fact connects these two?" If you cannot name a real dynasty, empire, trade route, colonial company, craft guild, or production centre — with an approximate date range — then there is NO connection. Most pairs will have NO connection. That is correct and expected.
 
-RULES:
-1. Only assert relationships that are historically or materially verifiable. No symbolism. No metaphor.
-2. If no verifiable link exists between two objects, do not include that pair.
-3. Confidence: 3=direct verifiable (same dynasty/kiln/route), 2=strong circumstantial (same region/period), 1=skip.
-4. Max 6 connections. Only confidence 2 or 3.
+Only use these three CIDOC CRM relationship types:
 
-Return ONLY valid JSON:
-{"connections":[{"object1":"exact name","object2":"exact name","relation":"is-a","confidence":3,"label":"4-6 word label","detail":"1-2 sentences naming the dynasty, trade route, craft tradition, or geographic centre."}]}`
+P9i (was brought into existence by / E65 Creation): Objects share a documented production tradition — same regional workshop system, same named craft technique (e.g. Bidriware inlay, Kalamkari block printing, lost-wax casting), or same guild lineage.
+
+P12i (was present at / E5 Event): Objects are linked to the same named historical period, dynasty, or event with overlapping dates — e.g. both existing during Nizam rule in Hyderabad (1724-1948), or both from the same decade in the same city.
+
+P30i (custody transferred through / E10 Transfer of Custody): Objects moved through the same documented trade or colonial system — e.g. British India currency system, a specific trade route, a family lineage of inheritance you can name from the notes given.
+
+HARD REQUIREMENTS — a connection is INVALID unless it has all three:
+(a) the CIDOC property (P9i, P12i, or P30i)
+(b) a real named entity — not a vague category like "Indian culture" or "traditional craft", but a specific dynasty/company/route/guild name
+(c) an approximate date or date range
+
+If you are not confident the named entity is real and correct, do not include the connection. Fabricating a plausible-sounding but incorrect historical entity is worse than finding no connection.
+
+Object names in your response must match EXACTLY as written in the list above.
+
+Confidence 3 = same specific entity (same dynasty, same workshop, same named trade route). Confidence 2 = same broader region with overlapping documented period. Do not output confidence 1.
+
+Return ONLY valid JSON. If zero or one verified connections exist, return {"connections":[]}.
+{"connections":[{"object1":"EXACT name from list","object2":"EXACT name from list","relation":"P12i","confidence":3,"label":"4-6 word factual label","detail":"Name the exact dynasty/route/institution and date range."}]}`
 
     fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
