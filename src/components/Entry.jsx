@@ -80,9 +80,9 @@ function EditableItem({ trinket, onSave, onRemove, onCancel }) {
         <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.material||''} onChange={e=>set('material',e.target.value)} placeholder="Material" />
         <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.note||''} onChange={e=>set('note',e.target.value)} placeholder="Note" />
         <div style={{ display:'flex', gap:'8px', justifyContent:'flex-end', marginTop:'4px' }}>
-          <button onClick={onCancel} style={{ padding:'5px 14px', borderRadius:'99px', border:'0.5px solid #8A8070', background:'none', color:'#8A8070', fontFamily:'Inconsolata,monospace', fontSize:'10px', cursor:'pointer' }}>cancel</button>
+          <button onClick={onCancel} style={{ padding:'5px 14px', borderRadius:'99px', border:'0.5px solid #8A8070', background:'none', color:'#8A8070', fontFamily:'Inconsolata,monospace', fontSize:'10px', cursor:'pointer' }}>Cancel</button>
           <button onClick={()=>onRemove(trinket.id)} style={{ padding:'5px 14px', borderRadius:'99px', border:'0.5px solid #C04040', background:'none', color:'#C04040', fontFamily:'Inconsolata,monospace', fontSize:'10px', cursor:'pointer' }}>remove</button>
-          <button onClick={()=>onSave(form)} style={{ padding:'5px 14px', borderRadius:'99px', border:'0.5px solid #2A2010', background:'#2A2010', color:'#E8E0D0', fontFamily:'Inconsolata,monospace', fontSize:'10px', cursor:'pointer' }}>save</button>
+          <button onClick={()=>onSave(form)} style={{ padding:'5px 14px', borderRadius:'99px', border:'0.5px solid #2A2010', background:'#2A2010', color:'#E8E0D0', fontFamily:'Inconsolata,monospace', fontSize:'10px', cursor:'pointer' }}>Save</button>
         </div>
       </div>
     </div>
