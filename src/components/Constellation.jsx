@@ -81,7 +81,13 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
   const activeConns = useMemo(()=>{
     const result = []
     if(showKnown) result.push(...knownConns)
-    if(showInferred) result.push(...aiConns)
+    if(showInferred){
+      const knownSeen=new Set(knownConns.map(c=>`${Math.min(...c.ids)}-${Math.max(...c.ids)}`))
+      aiConns.forEach(c=>{
+        const k=`${Math.min(...c.ids)}-${Math.max(...c.ids)}`
+        if(!knownSeen.has(k)) result.push(c)
+      })
+    }
     return result
   },[showKnown,showInferred,knownConns,aiConns])
 
@@ -265,7 +271,7 @@ Return ONLY valid JSON. If zero or one verified connections exist, return {"conn
     // Each node drifts in a tiny circle around its own settled position
     // Phase offset by golden angle per node — they never sync
     const phase=idx*2.399963
-    const driftR=7
+    const driftR=13
     return{
       x:ap.x+Math.cos(orbitAngle+phase)*driftR,
       y:ap.y+Math.sin(orbitAngle+phase)*driftR,
@@ -325,11 +331,15 @@ Return ONLY valid JSON. If zero or one verified connections exist, return {"conn
                 return(
                   <g key={year}>
                     <circle cx={cx} cy={cy} r={Math.round(r)} fill="none" stroke="#585850" strokeWidth="1.5" strokeDasharray="2 5"/>
-                    {(yi===0||yi===sortedYears.length-1)&&(
-                      <text x={Math.min(cx+Math.round(r)+8,W-50)} y={cy} fontSize="13" fill="#A0A090" fontFamily="Inconsolata,monospace" dominantBaseline="central" fontStyle="italic" fontWeight="600">
-                        {yi===0?`oldest . ${year}`:`newest . ${year}`}
-                      </text>
-                    )}
+                    {(yi===0||yi===sortedYears.length-1)&&(()=>{
+                      const labelX=cx+Math.round(r)+8
+                      const clamped=labelX>W-90
+                      return(
+                        <text x={clamped?W-8:labelX} y={cy-(yi===0?10:-10)} fontSize="11" fill="#A0A090" fontFamily="Inconsolata,monospace" dominantBaseline="central" fontStyle="italic" fontWeight="600" textAnchor={clamped?'end':'start'}>
+                          {yi===0?`oldest . ${year}`:`newest . ${year}`}
+                        </text>
+                      )
+                    })()}
                   </g>
                 )
               })}
