@@ -85,18 +85,21 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
 
   // activeConns: AI connections take priority over hardcoded inferred
   // activeConns: known = manually verified, inferred+AI = AI only (no hardcoded inferred)
+  // AI connections that survive dedup against known connections — this is what actually renders
+  const renderedAiConns = useMemo(()=>{
+    const knownSeen=new Set(knownConns.map(c=>`${Math.min(...c.ids)}-${Math.max(...c.ids)}`))
+    return aiConns.filter(c=>{
+      const k=`${Math.min(...c.ids)}-${Math.max(...c.ids)}`
+      return !knownSeen.has(k)
+    })
+  },[knownConns,aiConns])
+
   const activeConns = useMemo(()=>{
     const result = []
     if(showKnown) result.push(...knownConns)
-    if(showInferred){
-      const knownSeen=new Set(knownConns.map(c=>`${Math.min(...c.ids)}-${Math.max(...c.ids)}`))
-      aiConns.forEach(c=>{
-        const k=`${Math.min(...c.ids)}-${Math.max(...c.ids)}`
-        if(!knownSeen.has(k)) result.push(c)
-      })
-    }
+    if(showInferred) result.push(...renderedAiConns)
     return result
-  },[showKnown,showInferred,knownConns,aiConns])
+  },[showKnown,showInferred,knownConns,renderedAiConns])
 
   const axes = getAxisScores(trinkets)
 
@@ -308,7 +311,7 @@ Return ONLY valid JSON with every connection you can verify (this may be zero, o
 
           {/* AI status */}
           {aiLoading&&<p style={{fontFamily:'Inconsolata,monospace',fontSize:'11px',color:'#888870',fontStyle:'italic',marginBottom:'3px'}}>finding connections...</p>}
-          {!aiLoading&&aiConns.length>0&&<p style={{fontFamily:'Inconsolata,monospace',fontSize:'11px',color:'#6A9060',marginBottom:'3px'}}>{aiConns.length} AI connections found</p>}
+          {!aiLoading&&renderedAiConns.length>0&&<p style={{fontFamily:'Inconsolata,monospace',fontSize:'11px',color:'#6A9060',marginBottom:'3px',fontStyle:'italic'}}>{renderedAiConns.length} provenance {renderedAiConns.length===1?'link':'links'} traced from the archive</p>}
 
           {/* Empty state */}
           {trinkets.length<3?(
@@ -456,7 +459,7 @@ Return ONLY valid JSON with every connection you can verify (this may be zero, o
                     {lines.map((ln,li)=>(
                       <text key={li} x={p.x} y={startY+li*lh} textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fill={tc} fontFamily="Inconsolata,monospace" fontWeight="600" opacity={dimmed?0.2:1}>{ln}</text>
                     ))}
-                    {t.date&&<text x={p.x+Math.cos(angle)*(nr+18)} y={p.y+Math.sin(angle)*(nr+12)} textAnchor="middle" fontSize={isMobile?9:11} fill="#A0A090" fontFamily="Inconsolata,monospace" opacity={dimmed?0.1:1}>{t.date}</text>}
+                    {(t.dateOrigin||t.date)&&<text x={p.x+Math.cos(angle)*(nr+18)} y={p.y+Math.sin(angle)*(nr+12)} textAnchor="middle" fontSize={isMobile?9:11} fill="#A0A090" fontFamily="Inconsolata,monospace" opacity={dimmed?0.1:1}>{t.dateOrigin||t.date}</text>}
                   </g>
                 )
               })}
