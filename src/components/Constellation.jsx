@@ -227,7 +227,7 @@ Return ONLY valid JSON, no markdown:
   const MAX_R=isMobile?155:300,MIN_R=isMobile?55:85,margin=55
   const youR=isMobile?26:32
 
-  const trinketYears=useMemo(()=>trinkets.map(t=>parseYear(t.date)||2000),[trinkets])
+  const trinketYears=useMemo(()=>trinkets.map(t=>parseYear(t.dateOrigin)||parseYear(t.date)||2000),[trinkets])
   const minYear=useMemo(()=>Math.min(...trinketYears),[trinketYears])
   const maxYear=useMemo(()=>Math.max(...trinketYears),[trinketYears])
 
@@ -430,7 +430,7 @@ Return ONLY valid JSON, no markdown:
                     {lines.map((ln,li)=>(
                       <text key={li} x={p.x} y={startY+li*lh} textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fill={tc} fontFamily="Inconsolata,monospace" fontWeight="600" opacity={dimmed?0.2:1}>{ln}</text>
                     ))}
-                    {t.date&&<text x={p.x+Math.cos(angle)*(nr+18)} y={p.y+Math.sin(angle)*(nr+12)} textAnchor="middle" fontSize={isMobile?9:11} fill="#A0A090" fontFamily="Inconsolata,monospace" opacity={dimmed?0.1:1}>{t.date}</text>}
+                    {(t.dateOrigin||t.date)&&<text x={p.x+Math.cos(angle)*(nr+18)} y={p.y+Math.sin(angle)*(nr+12)} textAnchor="middle" fontSize={isMobile?9:11} fill="#A0A090" fontFamily="Inconsolata,monospace" opacity={dimmed?0.1:1}>{t.dateOrigin||t.date}</text>}
                   </g>
                 )
               })}

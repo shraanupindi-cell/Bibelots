@@ -17,14 +17,6 @@ const pill = {
   color:'#2A2010', outline:'none', textAlign:'center', letterSpacing:'0.03em',
 }
 
-const pillSel = {
-  ...pill,
-  cursor:'pointer',
-  appearance:'none',
-  WebkitAppearance:'none',
-  MozAppearance:'none',
-}
-
 // SelectWrap — renders select inside a div with custom arrow overlay
 // This is the only reliable cross-browser fix for double arrows on Windows
 function Sel({ value, onChange, options, placeholder, style={} }) {
@@ -70,11 +62,13 @@ function EditableItem({ trinket, onSave, onRemove, onCancel }) {
   return (
     <div style={{ background:'rgba(42,32,16,0.06)', borderRadius:'8px', padding:'12px', marginBottom:'8px' }}>
       <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-        <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.name||''} onChange={e=>set('name',e.target.value)} placeholder="Object" />
-        <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.place||''} onChange={e=>set('place',e.target.value)} placeholder="Place" />
+        <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Object" />
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
-          <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.dateOrigin||''} onChange={e=>set('dateOrigin',e.target.value)} placeholder="Date of origin (optional)" />
-          <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.date||''} onChange={e=>set('date',e.target.value)} placeholder="Date acquired" />
+          <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.place||''} onChange={e=>set('place',e.target.value)} placeholder="Place" />
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
+            <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.dateOrigin||''} onChange={e=>set('dateOrigin',e.target.value)} placeholder="Date of origin (optional)" />
+            <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.date||''} onChange={e=>set('date',e.target.value)} placeholder="Date acquired" />
+          </div>
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
           <select style={{...pillSel, fontSize:'11px'}} value={form.emotion||''} onChange={e=>set('emotion',e.target.value)}>
@@ -89,9 +83,9 @@ function EditableItem({ trinket, onSave, onRemove, onCancel }) {
         <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.material||''} onChange={e=>set('material',e.target.value)} placeholder="Material" />
         <input style={{...pill, textAlign:'left', fontSize:'11px'}} value={form.note||''} onChange={e=>set('note',e.target.value)} placeholder="Note" />
         <div style={{ display:'flex', gap:'8px', justifyContent:'flex-end', marginTop:'4px' }}>
-          <button onClick={onCancel} style={{ padding:'5px 14px', borderRadius:'99px', border:'0.5px solid #8A8070', background:'none', color:'#8A8070', fontFamily:'Inconsolata,monospace', fontSize:'10px', cursor:'pointer' }}>Cancel</button>
+          <button onClick={onCancel} style={{ padding:'5px 14px', borderRadius:'99px', border:'0.5px solid #8A8070', background:'none', color:'#8A8070', fontFamily:'Inconsolata,monospace', fontSize:'10px', cursor:'pointer' }}>cancel</button>
           <button onClick={()=>onRemove(trinket.id)} style={{ padding:'5px 14px', borderRadius:'99px', border:'0.5px solid #C04040', background:'none', color:'#C04040', fontFamily:'Inconsolata,monospace', fontSize:'10px', cursor:'pointer' }}>remove</button>
-          <button onClick={()=>onSave(form)} style={{ padding:'5px 14px', borderRadius:'99px', border:'0.5px solid #2A2010', background:'#2A2010', color:'#E8E0D0', fontFamily:'Inconsolata,monospace', fontSize:'10px', cursor:'pointer' }}>Save</button>
+          <button onClick={()=>onSave(form)} style={{ padding:'5px 14px', borderRadius:'99px', border:'0.5px solid #2A2010', background:'#2A2010', color:'#E8E0D0', fontFamily:'Inconsolata,monospace', fontSize:'10px', cursor:'pointer' }}>save</button>
         </div>
       </div>
     </div>
@@ -122,8 +116,9 @@ export default function Entry({ trinkets, onAdd, onRemove, onUpdate, onMap }) {
 
           <input style={pill} placeholder="Object" value={form.name} onChange={e=>set('name',e.target.value)} />
 
-          <input style={pill} placeholder="Place" value={form.place} onChange={e=>set('place',e.target.value)} />
-
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
+            <input style={pill} placeholder="Place" value={form.place} onChange={e=>set('place',e.target.value)} />
+          </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
             <input style={pill} placeholder="Date of origin (optional)" value={form.dateOrigin||''} onChange={e=>set('dateOrigin',e.target.value)} />
             <input style={pill} placeholder="Date acquired" value={form.date} onChange={e=>set('date',e.target.value)} />
