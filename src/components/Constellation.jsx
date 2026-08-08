@@ -227,8 +227,8 @@ Return ONLY valid JSON with every connection you can verify (this may be zero, o
 
   const isMobile=window.innerWidth<600
   const n=trinkets.length||3
-  const W=isMobile?360:700,H=isMobile?340:560,cx=W/2,cy=H/2
-  const MAX_R=isMobile?130:265,MIN_R=isMobile?42:75
+  const W=isMobile?380:900,H=isMobile?420:700,cx=W/2,cy=H/2
+  const MAX_R=isMobile?160:340,MIN_R=isMobile?48:95
   const margin=isMobile?44:62
   const youR=isMobile?26:32
 
@@ -292,7 +292,7 @@ Return ONLY valid JSON with every connection you can verify (this may be zero, o
   return (
     <div style={{position:'fixed',inset:0,background:'#1E1E1E'}}>
       {view==='map'?(
-        <div style={{position:'fixed',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'0.5rem'}}>
+        <div style={{position:'fixed',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'space-between',padding:'0.75rem 0.5rem'}}>
 
           {/* Toggles */}
           <div style={{display:'flex',gap:'8px',marginBottom:'4px',flexWrap:'wrap',justifyContent:'center',alignItems:'center'}}>
@@ -319,7 +319,7 @@ Return ONLY valid JSON with every connection you can verify (this may be zero, o
             </div>
           ):(
             <div
-              style={{width:'100%',maxHeight:'50vh',overflow:'hidden',cursor:isDragging.current?'grabbing':'grab',touchAction:'none',overscrollBehavior:'none'}}
+              style={{width:'100%',maxHeight:'68vh',overflow:'hidden',cursor:isDragging.current?'grabbing':'grab',touchAction:'none',overscrollBehavior:'none'}}
               onWheel={e=>{setZoom(z=>Math.max(0.5,Math.min(4,z*(e.deltaY<0?1.12:0.9))))}}
               onMouseDown={e=>{isDragging.current=true;dragStart.current={x:e.clientX,y:e.clientY,px:pan.x,py:pan.y}}}
               onMouseMove={e=>{if(!isDragging.current)return;setPan({x:dragStart.current.px+(e.clientX-dragStart.current.x),y:dragStart.current.py+(e.clientY-dragStart.current.y)})}}
@@ -330,7 +330,7 @@ Return ONLY valid JSON with every connection you can verify (this may be zero, o
               onTouchEnd={()=>{isDragging.current=false}}
             >
               <div style={{transform:`translate(${pan.x}px,${pan.y}px) scale(${zoom})`,transformOrigin:'center center',transition:isDragging.current?'none':'transform 0.05s'}}>
-            <svg viewBox={`0 0 ${W} ${H}`} style={{width:'auto',height:'auto',maxWidth:`${W}px`,maxHeight:'50vh',display:'block',margin:'0 auto'}}>
+            <svg viewBox={`0 0 ${W} ${H}`} style={{width:'auto',height:'auto',maxWidth:`${W}px`,maxHeight:'68vh',display:'block',margin:'0 auto'}}>
 
               {/* Rings */}
               {sortedYears.map((year,yi)=>{
@@ -362,7 +362,7 @@ Return ONLY valid JSON with every connection you can verify (this may be zero, o
                 return <line key={t.id} x1={cx+(dx/d)*youR2} y1={cy+(dy/d)*youR2} x2={p.x-(dx/d)*nr} y2={p.y-(dy/d)*nr} stroke="#4A4A42" strokeWidth="1.2"/>
               })}
 
-              {/* Connections */}
+              {/* Connections — curved when multiple lines share similar paths, so overlapping AI connections stay visually distinct */}
               {activeConns.map((c,i)=>{
                 if(!visibleConns.includes(i)) return null
                 const fp1=finalPos[c.ids[0]],fp2=finalPos[c.ids[1]]
@@ -380,10 +380,27 @@ Return ONLY valid JSON with every connection you can verify (this may be zero, o
                 const isSel=selectedConn===c
                 const isHov=hoveredNode&&c.ids.includes(hoveredNode)
                 const dimmed=hoveredNode&&!isHov
+                // Count how many other connections share a similar angle from either endpoint — bundle detection
+                const myAngle=Math.atan2(p2.y-p1.y,p2.x-p1.x)
+                const siblings=activeConns.filter((c2,i2)=>{
+                  if(i2===i) return false
+                  const shares=c2.ids.some(id=>c.ids.includes(id))
+                  return shares
+                })
+                const bundleIndex=siblings.filter((c2,i2)=>activeConns.indexOf(c2)<i).length
+                const bundleSize=siblings.length+1
+                // Curve offset: spread lines that share an endpoint into a gentle fan
+                const curveOffset=bundleSize>1?((bundleIndex-(bundleSize-1)/2)*14):0
+                const mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2
+                const perpX=-(p2.y-p1.y)/llen, perpY=(p2.x-p1.x)/llen
+                const ctrlX=mx+perpX*curveOffset, ctrlY=my+perpY*curveOffset
+                const pathD=curveOffset===0
+                  ? `M${p1.x},${p1.y} L${p2.x},${p2.y}`
+                  : `M${p1.x},${p1.y} Q${ctrlX},${ctrlY} ${p2.x},${p2.y}`
                 return(
                   <g key={i} onClick={()=>{setSelectedConn(isSel?null:c);if(showTip){setShowTip(false);localStorage.setItem('bib_tip','1')}}} style={{cursor:'pointer'}}>
-                    <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="transparent" strokeWidth={12}/>
-                    <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
+                    <path d={pathD} fill="none" stroke="transparent" strokeWidth={12}/>
+                    <path d={pathD} fill="none"
                       stroke={isSel?'#FFFFFF':c.ai?'#C8D8C0':'#E8E0D0'}
                       strokeWidth={isSel?s.w+1:c.ai?2:s.w}
                       strokeDasharray={c.ai?'8 3':c.inferred?'5 3':s.dash}
