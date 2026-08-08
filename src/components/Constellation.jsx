@@ -60,11 +60,12 @@ function spreadNodes(rawPos, minDist, cx, cy, youR, W, H, margin, iters=120) {
     if(!moved) break
   }
 
-  // Snap each node's radial distance back toward its original ring (90% restored),
-  // keeping only the angular shift that resolved the overlap. This keeps chronology readable.
+  // Lock every node's radial distance to its ORIGINAL chronological ring — 100%, no blending.
+  // Overlap resolution above only ever contributes an angular (rotational) correction;
+  // the radius always reflects the object's actual date, never drifts from it.
   for(const id of ids){
     const p=pos[id], dx=p.x-cx, dy=p.y-cy, d=Math.sqrt(dx*dx+dy*dy)||1
-    const targetD = origDist[id]*0.9 + d*0.1
+    const targetD = origDist[id]
     pos[id]={x:cx+(dx/d)*targetD, y:cy+(dy/d)*targetD}
   }
 
