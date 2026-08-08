@@ -35,6 +35,12 @@ function aiLineStyle(confidence) {
 function spreadNodes(rawPos, minDist, cx, cy, youR, W, H, margin, iters=120) {
   const pos = Object.fromEntries(Object.entries(rawPos).map(([k,v])=>[k,{x:v.x,y:v.y}]))
   const ids = Object.keys(pos)
+  // Remember each node's original distance from centre — this encodes its chronological ring.
+  // Overlap resolution should mostly rotate nodes around the centre (tangential), not push them
+  // further out or in (radial), so the timeline meaning of ring position is preserved.
+  const origDist = {}
+  ids.forEach(id=>{ const p=pos[id]; origDist[id]=Math.sqrt((p.x-cx)**2+(p.y-cy)**2)||1 })
+
   const minFromCentre = youR + minDist * 0.7
   for(let it=0;it<iters;it++) {
     let moved = false
@@ -44,11 +50,25 @@ function spreadNodes(rawPos, minDist, cx, cy, youR, W, H, margin, iters=120) {
     }
     for(let i=0;i<ids.length;i++) for(let j=i+1;j<ids.length;j++){
       const a=pos[ids[i]],b=pos[ids[j]],dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)
-      if(d<minDist&&d>0){const push=(minDist-d)/2,nx=dx/d,ny=dy/d;pos[ids[i]]={x:a.x-nx*push,y:a.y-ny*push};pos[ids[j]]={x:b.x+nx*push,y:b.y+ny*push};moved=true}
+      if(d<minDist&&d>0){
+        const push=(minDist-d)/2,nx=dx/d,ny=dy/d
+        pos[ids[i]]={x:a.x-nx*push,y:a.y-ny*push}
+        pos[ids[j]]={x:b.x+nx*push,y:b.y+ny*push}
+        moved=true
+      }
     }
     if(!moved) break
   }
-  // Re-clamp every node inside canvas bounds after repulsion — prevents nodes escaping visible area
+
+  // Snap each node's radial distance back toward its original ring (90% restored),
+  // keeping only the angular shift that resolved the overlap. This keeps chronology readable.
+  for(const id of ids){
+    const p=pos[id], dx=p.x-cx, dy=p.y-cy, d=Math.sqrt(dx*dx+dy*dy)||1
+    const targetD = origDist[id]*0.9 + d*0.1
+    pos[id]={x:cx+(dx/d)*targetD, y:cy+(dy/d)*targetD}
+  }
+
+  // Re-clamp every node inside canvas bounds — prevents nodes escaping visible area
   if(W&&H&&margin!=null){
     for(const id of ids){
       pos[id].x=Math.max(margin,Math.min(W-margin,pos[id].x))
@@ -120,12 +140,13 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
 
     const list=trinkets.map((t,i)=>{
       const parts=[`${i+1}. "${t.name}"`]
-      if(t.dateOrigin) parts.push(`origin date: ${t.dateOrigin}`)
-      if(t.date) parts.push(`acquired: ${t.date}`)
+      if(t.dateOrigin) parts.push(`origin_date: ${t.dateOrigin}`)
+      if(t.date) parts.push(`acquired_date: ${t.date}`)
       if(t.place) parts.push(`place: ${t.place}`)
       if(t.material) parts.push(`material: ${t.material}`)
+      if(t.acquisition) parts.push(`acquisition_method: ${t.acquisition}`)
       if(t.note) parts.push(`note: "${t.note}"`)
-      return parts.join(', ')
+      return parts.join(' | ')
     }).join('\n')
 
     const prompt=`You are a cultural heritage documentation specialist using the CIDOC Conceptual Reference Model (CIDOC CRM), the ISO standard (ISO 21127) used by museums worldwide to document object relationships. You must reason only from documented history — never invent facts.
@@ -133,13 +154,20 @@ export default function Constellation({ trinkets, onReveal, onBack }) {
 OBJECTS IN THIS COLLECTION:
 ${list}
 
-TASK: For every pair of objects, ask yourself: "What specific, real, documented historical fact connects these two?" Consider shared dynasty, empire, region, trade route, colonial period, craft tradition, or production centre. Use the date of origin and place fields provided — they are your primary evidence. If two objects share an overlapping era and region, that is a valid P12i connection even if not from the exact same dynasty.
+TASK: You must cross-reference every field of every object against every other object before drawing any connection. For each pair, systematically check:
+- place vs place: same city, region, landmark, or documented trade hub?
+- origin_date vs origin_date: overlapping era, dynasty, or century?
+- material vs material: same craft tradition, technique, or material-processing lineage?
+- acquisition_method vs acquisition_method: same trade/transfer mechanism (inherited, traded, gifted, purchased through a documented system)?
+- note vs note: any explicit shared context (family history, region, event) mentioned by the collector?
+
+A connection is only valid if at least one of these field comparisons yields a real, named, verifiable historical fact — not a coincidence of category. Use ALL available fields for every object, not just the name. If an object has a place field, that place's documented ruling power for the relevant era is valid evidence (e.g. a place "Charminar, Hyderabad" with origin_date in the 1600s implies Qutub Shahi period; 1700s-1940s implies Nizam/Asaf Jahi period).
 
 Only use these three CIDOC CRM relationship types:
 
 P9i (was brought into existence by / E65 Creation): Objects share a documented production tradition — same regional workshop system, same named craft technique (e.g. Bidriware inlay, Kalamkari block printing, lost-wax casting), or same guild lineage.
 
-P12i (was present at / E5 Event): Objects are linked to the same named historical period, dynasty, or event with overlapping dates — e.g. both existing during Nizam rule in Hyderabad (1724-1948), or both from the same decade in the same city.
+P12i (was present at / E5 Event): Objects are linked to the same named historical period, dynasty, or event with overlapping dates — e.g. both existing during Nizam rule in Hyderabad (1724-1948), or both from the same decade in the same city. If two objects share a documented landmark, neighbourhood, or city (e.g. both associated with Charminar or the old city of Hyderabad), and that place has a known ruling dynasty for the relevant period (e.g. Qutub Shahi 1518-1687, then Nizam rule 1724-1948), name that dynasty explicitly as the linking entity — this counts as a valid P12i connection.
 
 P30i (custody transferred through / E10 Transfer of Custody): Objects moved through the same documented trade or colonial system — e.g. British India currency system, a specific trade route, a family lineage of inheritance you can name from the notes given.
 
